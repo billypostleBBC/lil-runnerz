@@ -16,7 +16,11 @@ export async function checkCharacterAvailability(
     const result = await request(`${base}${definition.character.asset}`, {
       method: "GET",
     });
-    if (result.ok) return { available: true };
+    if (
+      result.ok &&
+      result.headers.get("content-type")?.toLowerCase().startsWith("image/")
+    )
+      return { available: true };
   } catch {
     // Network and missing-file failures use the same availability policy.
   }
