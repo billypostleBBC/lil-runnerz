@@ -1,5 +1,8 @@
 import Phaser from "phaser";
-import { character, controllerProfile } from "../content/character";
+import {
+  characters,
+  defaultCharacterId,
+} from "../content/character";
 import { rooms } from "../content/rooms";
 import {
   activateShield,
@@ -11,12 +14,18 @@ import {
   hazardActive,
   shieldActive,
   transition,
-  validateCharacter,
-  validateProfile,
+  validateCharacters,
 } from "./rules";
 import { paintBackground, paintHazards, paintTerrain } from "./art";
+import { resolveCharacterRuntime } from "./character-runtime";
 import { ManualInput } from "./input";
-import type { Actions, Mode, Snapshot, Status } from "./types";
+import type {
+  Actions,
+  CharacterDefinition,
+  Mode,
+  Snapshot,
+  Status,
+} from "./types";
 
 export class CourseScene extends Phaser.Scene {
   readonly course = assembleCourse(rooms);
@@ -25,7 +34,10 @@ export class CourseScene extends Phaser.Scene {
   private hazardsArt!: Phaser.Textures.CanvasTexture;
   private shield!: Phaser.GameObjects.Graphics;
   private manual!: ManualInput;
-  private controller = new Controller(controllerProfile);
+  private active: CharacterDefinition = resolveCharacterRuntime(
+    defaultCharacterId,
+  ).definition;
+  private controller = new Controller(this.active.controllerProfile);
   private run = createRun("auto");
   private reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   private motionQuery = matchMedia("(prefers-reduced-motion: reduce)");
@@ -39,31 +51,15 @@ export class CourseScene extends Phaser.Scene {
   private finishX = this.course.width - 96;
   private facing = 1;
   private ready = false;
-  private assetFailed = false;
   constructor(
     private onSnapshot: (s: Snapshot) => void,
     private onReady: () => void,
     private onError: (message: string) => void,
   ) {
     super("course");
-  }
-  preload() {
-    validateCharacter(character);
-    validateProfile(controllerProfile);
-    this.load.on("loaderror", () => {
-      this.assetFailed = true;
-      this.onError(
-        "The character image could not be loaded. Reload the page to try again.",
-      );
-    });
-    this.load.spritesheet(
-      "pet",
-      `${import.meta.env.BASE_URL}${character.asset}`,
-      { frameWidth: 192, frameHeight: 208 },
-    );
+    validateCharacters(characters);
   }
   create() {
-    if (this.assetFailed) return;
     this.backdrop = this.textures.createCanvas("backdrop", 640, 360)!;
     this.add
       .image(0, 0, "backdrop")
@@ -103,15 +99,13 @@ export class CourseScene extends Phaser.Scene {
       ground.add(zone);
     }
     this.player = this.physics.add
-      .sprite(80, 313.25, "pet", 0)
+      .sprite(80, 313.25, "__WHITE", 0)
       .setOrigin(0.5, 1)
-      .setScale(40 / 192)
+      .setVisible(false)
       .setDepth(5);
     this.player.setCollideWorldBounds(true);
     const body = this.player.body as Phaser.Physics.Arcade.Body;
-    body.setSize(86, 134).setOffset(53, 68);
-    body.updateFromGameObject();
-    body.setMaxVelocity(character.speed, 700);
+    body.setMaxVelocity(this.active.character.speed, 700);
     this.physics.add.collider(this.player, ground);
     for (const hazard of this.course.hazards) {
       const zone = this.add
@@ -122,7 +116,11 @@ export class CourseScene extends Phaser.Scene {
         if (
           this.run.status === "running" &&
           hazardActive(hazard, this.run.elapsed) &&
-          !shieldActive(this.run.shieldAt, this.run.elapsed, character.power)
+          !shieldActive(
+            this.run.shieldAt,
+            this.run.elapsed,
+            this.active.character.power,
+          )
         )
           this.end(
             "dead",
@@ -171,17 +169,44 @@ export class CourseScene extends Phaser.Scene {
   private visibilityChanged = () => {
     if (document.hidden) this.lostFocus();
   };
-  start(mode: Mode) {
+  async start(mode: Mode, characterId: string): Promise<void> {
     if (!this.ready) return;
+    const runtime = resolveCharacterRuntime(characterId);
+    try {
+      await this.loadCharacterTexture(runtime.definition, runtime.textureKey);
+    } catch {
+      this.onError(
+        `${runtime.definition.character.name} artwork could not be loaded. Reload the page to try again.`,
+      );
+      return;
+    }
+    this.active = runtime.definition;
     this.run = createRun(mode);
     this.run.status = "running";
     this.reason = "";
     this.decision =
       mode === "auto" ? "Finding a way through" : "You are in control";
-    this.controller = new Controller(controllerProfile);
+    this.controller = new Controller(this.active.controllerProfile);
     this.manual.clear();
-    this.player.setPosition(80, 313.25).setVelocity(0, 0);
-    this.player.setVisible(true);
+    this.player
+      .setTexture(runtime.textureKey, 0)
+      .setScale(40 / this.active.frameWidth)
+      .setPosition(80, 313.25)
+      .setVelocity(0, 0)
+      .setVisible(true);
+    const body = this.player.body as Phaser.Physics.Arcade.Body;
+    body
+      .setSize(
+        (86 / 192) * this.active.frameWidth,
+        (134 / 208) * this.active.frameHeight,
+      )
+      .setOffset(
+        (53 / 192) * this.active.frameWidth,
+        (68 / 208) * this.active.frameHeight,
+      );
+    body.setMaxVelocity(this.active.character.speed, 700);
+    body.setGravityY(this.active.character.gravity);
+    body.updateFromGameObject();
     this.facing = 1;
     this.lastProgressX = 80;
     this.lastProgressTime = 0;
@@ -190,6 +215,38 @@ export class CourseScene extends Phaser.Scene {
     this.cameras.main.setScroll(0, 0);
     this.physics.resume();
     this.publish();
+  }
+  private loadCharacterTexture(
+    definition: CharacterDefinition,
+    textureKey: string,
+  ): Promise<void> {
+    if (this.textures.exists(textureKey)) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const cleanup = () => {
+        this.load.off("complete", complete);
+        this.load.off("loaderror", failed);
+      };
+      const complete = () => {
+        cleanup();
+        resolve();
+      };
+      const failed = (file: Phaser.Loader.File) => {
+        if (file.key !== textureKey) return;
+        cleanup();
+        reject(new Error(`Failed to load ${definition.character.name}.`));
+      };
+      this.load.once("complete", complete);
+      this.load.on("loaderror", failed);
+      this.load.spritesheet(
+        textureKey,
+        `${import.meta.env.BASE_URL}${definition.character.asset}`,
+        {
+          frameWidth: definition.frameWidth,
+          frameHeight: definition.frameHeight,
+        },
+      );
+      this.load.start();
+    });
   }
   pause(reason = "Paused. Take your time.") {
     this.manual?.clear();
@@ -255,7 +312,7 @@ export class CourseScene extends Phaser.Scene {
               this.course.solids,
               this.course.hazards,
             );
-      const target = actions.move * character.speed;
+      const target = actions.move * this.active.character.speed;
       const rate = ((actions.move ? 1500 : 2100) * dt) / 1000;
       this.player.setVelocityX(
         Phaser.Math.Clamp(
@@ -270,7 +327,7 @@ export class CourseScene extends Phaser.Scene {
         this.jumpBufferedUntil > this.run.elapsed &&
         (grounded || this.run.elapsed - this.groundedAt < 75)
       ) {
-        this.player.setVelocityY(-character.jumpSpeed);
+        this.player.setVelocityY(-this.active.character.jumpSpeed);
         this.jumpBufferedUntil = 0;
         this.groundedAt = -1000;
       }
@@ -278,12 +335,16 @@ export class CourseScene extends Phaser.Scene {
         this.run.shieldAt = activateShield(
           this.run.shieldAt,
           this.run.elapsed,
-          character.power,
+          this.active.character.power,
         );
       this.decision =
         this.run.mode === "manual"
           ? "You are in control"
-          : shieldActive(this.run.shieldAt, this.run.elapsed, character.power)
+          : shieldActive(
+                this.run.shieldAt,
+                this.run.elapsed,
+                this.active.character.power,
+              )
             ? "Shielding against danger"
             : !grounded
               ? body.velocity.y < 0
@@ -305,11 +366,12 @@ export class CourseScene extends Phaser.Scene {
       }
       if (
         this.run.mode === "auto" &&
-        this.run.elapsed - this.lastProgressTime >= controllerProfile.stuckMs
+        this.run.elapsed - this.lastProgressTime >=
+          this.active.controllerProfile.stuckMs
       )
         this.end(
           "stuck",
-          "Codex could not find a way forward. Retry, or try the route yourself.",
+          `${this.active.character.name} could not find a way forward. Retry, or try the route yourself.`,
         );
       this.followCamera(dt);
     }
@@ -333,7 +395,13 @@ export class CourseScene extends Phaser.Scene {
     );
     this.hazardsArt.refresh();
     this.shield.clear();
-    if (shieldActive(this.run.shieldAt, this.run.elapsed, character.power)) {
+    if (
+      shieldActive(
+        this.run.shieldAt,
+        this.run.elapsed,
+        this.active.character.power,
+      )
+    ) {
       this.shield.lineStyle(2, 0xabe7c2, 1);
       this.shield.strokeRoundedRect(
         Math.round(this.player.x - 21),
@@ -397,7 +465,7 @@ export class CourseScene extends Phaser.Scene {
   snapshot(): Snapshot {
     const body = this.player?.body as Phaser.Physics.Arcade.Body | undefined;
     return {
-      characterId: character.id,
+      characterId: this.active.character.id,
       status: this.run.status,
       mode: this.run.mode,
       elapsed: Math.round(this.run.elapsed),
@@ -420,12 +488,12 @@ export class CourseScene extends Phaser.Scene {
       shield: shieldActive(
         this.run.shieldAt,
         this.run.elapsed,
-        character.power,
+        this.active.character.power,
       ),
       cooldown: cooldownLeft(
         this.run.shieldAt,
         this.run.elapsed,
-        character.power,
+        this.active.character.power,
       ),
       decision: this.decision,
       reason: this.reason,

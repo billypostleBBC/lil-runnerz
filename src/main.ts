@@ -2,7 +2,11 @@ import Phaser from "phaser";
 import "./style.css";
 import { CourseScene } from "./game/scene";
 import { rooms } from "./content/rooms";
-import { character, controllerProfile } from "./content/character";
+import {
+  character,
+  controllerProfile,
+  defaultCharacterId,
+} from "./content/character";
 import {
   assembleCourse,
   validateCharacter,
@@ -128,6 +132,7 @@ primary.addEventListener("click", () => {
   else
     scene.start(
       current?.status === "ready" ? mode() : (current?.mode ?? mode()),
+      current?.characterId ?? defaultCharacterId,
     );
   focusCanvas();
 });
@@ -189,7 +194,7 @@ try {
     physics: {
       default: "arcade",
       arcade: {
-        gravity: { x: 0, y: character.gravity },
+        gravity: { x: 0, y: 0 },
         fixedStep: true,
         fps: 60,
         debug: false,
