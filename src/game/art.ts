@@ -1,8 +1,10 @@
 import type { Course } from "./types";
 import { hazardWarning } from "./rules";
 
-const stone = ["#252933", "#292d37", "#2d303a", "#242730"];
-const rock = ["#172d32", "#1b3338", "#203a3e", "#203338"];
+export type Scenery = Record<"dungeon" | "cave", HTMLImageElement>;
+
+const stone = ["#283440", "#303d49", "#35424e", "#25323e"];
+const rock = ["#203b40", "#29464b", "#304d51", "#243f45"];
 const hash = (x: number, y: number) =>
   Math.abs(Math.sin(x * 12.9898 + y * 78.233) * 43758.5453) % 1;
 function rect(
@@ -28,67 +30,50 @@ function poly(c: CanvasRenderingContext2D, points: number[][], colour: string) {
   c.fill();
 }
 
-function arch(
-  c: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-) {
-  rect(c, x, y + 12, w, h - 12, "#11131c");
-  rect(c, x + 8, y + 4, w - 16, h - 4, "#11131c");
-  rect(c, x + 16, y, w - 32, h, "#11131c");
-  rect(c, x - 8, y + 16, 6, h - 16, "#303039");
-  rect(c, x + w + 2, y + 16, 6, h - 16, "#303039");
-  rect(c, x + 8, y - 5, w - 16, 5, "#323039");
-  rect(c, x, y + 1, 8, 6, "#323039");
-  rect(c, x + w - 8, y + 1, 8, 6, "#323039");
-  for (let k = 0; k < 4; k++)
-    rect(c, x + 10 + k * 12, y + 14, 3, h - 14, "#252631");
+// Small integer clusters keep highlights and wear on the same pixel grid as the game.
+function masonry(c: CanvasRenderingContext2D, x: number, y: number,
+  w: number, h: number, seed: number, cave = false) {
+  const palette = cave ? rock : stone;
+  rect(c, x, y, w, h, palette[Math.floor(hash(seed, y) * palette.length)]);
+  rect(c, x + 1, y, w - 2, 1, cave ? "#4c6868" : "#52606a");
+  rect(c, x, y + 1, 1, h - 2, cave ? "#3d595d" : "#42515c");
+  rect(c, x + 1, y + h - 2, w - 1, 2, cave ? "#152e34" : "#19242e");
+  rect(c, x + w - 2, y + 2, 2, h - 3, "#182831");
+  for (let i = 0; i < 12; i++) {
+    const px = x + 2 + Math.floor(hash(seed + i, y) * Math.max(1, w - 5));
+    const py = y + 2 + Math.floor(hash(seed, y + i) * Math.max(1, h - 5));
+    rect(c, px, py, 1 + i % 3, 1 + i % 2,
+      i % 3 === 0 ? (cave ? "#3d5a5b" : "#47555e") : (cave ? "#1d363c" : "#222e38"));
+  }
+  if (hash(seed, y + 4) > 0.75) {
+    for (let i = 0; i < 5; i++)
+      rect(c, x + 3 + i % 3 * 2, y + 2 + i * 2, 2, 2,
+        i % 2 ? "#45543a" : "#354635");
+  }
 }
-function torch(
-  c: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  t: number,
-  reduced: boolean,
-) {
-  const flicker = reduced ? 0 : Math.floor(t / 140) % 3;
-  rect(c, x - 2, y, 4, 18, "#6b4b38");
-  rect(c, x - 5, y + 2, 10, 3, "#997047");
-  rect(c, x - 5, y - 12, 10, 13, "#9f4638");
-  rect(c, x - 3, y - 17 - flicker, 7, 15 + flicker, "#f39a55");
-  rect(c, x - 1, y - 10, 3, 10, "#ffdb94");
+
+function torch(c: CanvasRenderingContext2D, x: number, y: number, t: number, reduced: boolean) {
+  const frame = reduced ? 0 : Math.floor(t / 120) % 4;
+  // Stepped warm illumination; no blur that would soften the pixel artwork.
+  c.save();
+  for (let band = 4; band >= 1; band--) {
+    c.globalAlpha = 0.025;
+    rect(c, x - band * 11, y - 12 - band * 12, band * 22, band * 24, "#ff9a43");
+  }
+  c.restore();
+  rect(c, x - 3, y + 1, 6, 21, "#151d25");
+  rect(c, x - 2, y + 2, 2, 17, "#8c6944");
+  rect(c, x - 6, y - 2, 12, 9, "#19222b");
+  rect(c, x - 7, y - 2, 14, 2, "#b48c51");
+  rect(c, x - 6, y + 6, 12, 2, "#806646");
+  for (let i = -4; i <= 4; i += 4) rect(c, x + i, y, 1, 6, "#a7814b");
+  poly(c, [[x-5,y-3],[x-6,y-11],[x-3,y-16],[x-2,y-23-frame],
+    [x+1,y-17],[x+3,y-20+frame],[x+5,y-10],[x+4,y-3]], "#d75b29");
+  poly(c, [[x-3,y-3],[x-3,y-12],[x,y-18-frame],[x+3,y-9],[x+2,y-3]], "#ffab3f");
+  rect(c, x - 1, y - 10, 3, 7, "#ffe4a0");
+  if (!reduced) rect(c, x + frame - 2, y - 28 - frame * 2, 1, 2, "#df8241");
 }
-function statue(c: CanvasRenderingContext2D, x: number) {
-  rect(c, x - 33, 269, 66, 13, "#3b3840");
-  rect(c, x - 24, 255, 48, 14, "#302f39");
-  poly(
-    c,
-    [
-      [x - 17, 255],
-      [x - 20, 198],
-      [x - 33, 191],
-      [x - 34, 181],
-      [x - 12, 181],
-      [x - 12, 163],
-      [x + 12, 163],
-      [x + 12, 181],
-      [x + 33, 181],
-      [x + 34, 191],
-      [x + 21, 198],
-      [x + 17, 255],
-    ],
-    "#3b3944",
-  );
-  rect(c, x - 12, 150, 24, 24, "#43404b");
-  rect(c, x - 8, 157, 5, 3, "#1f202c");
-  rect(c, x + 3, 157, 5, 3, "#1f202c");
-  rect(c, x - 2, 173, 4, 72, "#252733");
-  rect(c, x - 16, 208, 5, 37, "#4a4650");
-  rect(c, x + 23, 169, 3, 74, "#4c4651");
-  rect(c, x + 17, 176, 15, 3, "#4c4651");
-}
+
 function crystals(
   c: CanvasRenderingContext2D,
   x: number,
@@ -129,153 +114,65 @@ function crystals(
 }
 
 export function paintBackground(
-  c: CanvasRenderingContext2D,
-  scrollX: number,
-  scrollY: number,
-  elapsed: number,
-  reduced: boolean,
-  course: Course,
-  width = 640,
-  height = 360,
+  c: CanvasRenderingContext2D, scrollX: number, scrollY: number,
+  elapsed: number, reduced: boolean, course: Course, scenery: Scenery,
+  width = 640, height = 360,
 ) {
   c.clearRect(0, 0, width, height);
-  c.fillStyle = "#11151d";
-  c.fillRect(0, 0, width, height);
+  c.imageSmoothingEnabled = false;
   for (const room of course.rooms) {
-    const left = Math.max(0, room.offset - scrollX),
-      right = Math.min(width, room.offset + room.width - scrollX);
+    const left = Math.max(0, room.offset - scrollX);
+    const right = Math.min(width, room.offset + room.width - scrollX);
     if (right <= left) continue;
     c.save();
     c.beginPath();
     c.rect(left, 0, right - left, height);
     c.clip();
-    c.translate(0, -Math.round(scrollY * 0.3));
     const cave = room.theme === "cave";
-    c.fillStyle = cave ? "#11272c" : "#1d1e29";
-    c.fillRect(0, 0, width, height + 80);
-    const drift = Math.round(scrollX * (reduced ? 1 : 0.22));
+    const localScroll = scrollX - room.offset;
+    const drift = Math.round(localScroll * (reduced ? 1 : 0.35));
+    const image = scenery[room.theme];
+    const imageWidth = Math.max(room.width, room.height * image.width / image.height);
+    const imageHeight = imageWidth * image.height / image.width;
+    const vertical = Math.round(scrollY * (reduced ? 1 : 0.3));
+    rect(c, 0, 0, width, height, cave ? "#08171f" : "#101722");
+    c.drawImage(image, -drift, -vertical, imageWidth, imageHeight);
+    // Darken the rear wall slightly; only real platforms get continuous pale edges.
+    rect(c, 0, 0, width, height, "#08111b18");
+    c.translate(0, -vertical);
     if (!cave) {
-      for (let y = 0; y < 380; y += 22)
-        for (
-          let gx = Math.floor(drift / 48) - 1;
-          gx < (drift + width) / 48 + 1;
-          gx++
-        ) {
-          const x = gx * 48 - drift + ((y / 22) % 2) * 24;
-          rect(
-            c,
-            x + 1,
-            y + 1,
-            46,
-            20,
-            ["#21222c", "#23242f", "#24252f"][Math.floor(hash(gx, y) * 3)],
-          );
-          if (hash(gx, y) > 0.7) rect(c, x + 4, y + 17, 16, 1, "#2d2c35");
+      // Sconces stay attached to the rear masonry as it scrolls.
+      for (let i = -1; i < imageWidth / 240 + 1; i++)
+        torch(c, i * 240 + 225 - drift, 235, elapsed + i * 170, reduced);
+      const near = Math.round(localScroll * (reduced ? 1 : 0.62));
+      for (let i = Math.floor(near / 210) - 1; i < (near + width) / 210 + 1; i++) {
+        const x = i * 210 + 75 - near;
+        const length = 70 + Math.floor(hash(i, 9) * 48);
+        for (let y = -6; y < length; y += 7) {
+          rect(c, x, y, 4, 6, "#191c24");
+          rect(c, x, y, 1, 5, "#8b6246");
+          rect(c, x + 1, y, 3, 1, "#bd8a58");
+          rect(c, x + 3, y + 1, 1, 5, "#563d33");
+          rect(c, x + 1, y + 5, 3, 1, "#936343");
         }
-      for (
-        let gx = Math.floor(drift / 224) - 1;
-        gx < (drift + width) / 224 + 1;
-        gx++
-      )
-        arch(c, gx * 224 - drift + 54, 95, 72, 190);
-      statue(c, 390 - (drift % 780));
-      statue(c, 1170 - (drift % 780));
-    } else {
-      for (
-        let gx = Math.floor(drift / 84) - 1;
-        gx < (drift + width) / 84 + 1;
-        gx++
-      ) {
-        const x = gx * 84 - drift,
-          low = 55 + hash(gx, 2) * 80;
-        poly(
-          c,
-          [
-            [x - 20, 0],
-            [x + 92, 0],
-            [x + 70, low],
-            [x + 35, low + 45],
-            [x + 12, low - 5],
-          ],
-          "#173239",
-        );
-        poly(
-          c,
-          [
-            [x + 15, 0],
-            [x + 47, 0],
-            [x + 35, low + 30],
-          ],
-          "#1c3c42",
-        );
-        const up = 225 + hash(gx, 4) * 50;
-        poly(
-          c,
-          [
-            [x - 20, 370],
-            [x + 20, up],
-            [x + 50, up - 17],
-            [x + 100, 370],
-          ],
-          "#16353b",
-        );
-        if (gx % 3 === 0) crystals(c, x + 30, 290, 28);
       }
-      for (let i = 0; i < 18; i++) {
-        const x = (i * 97 - drift * 0.6) % 760,
-          y = 100 + hash(i, 8) * 185;
-        rect(
-          c,
-          x,
-          y,
-          2,
-          2,
-          hash(i, Math.floor(elapsed / (reduced ? 1e9 : 1600))) > 0.5
-            ? "#4b817d"
-            : "#2e565b",
-        );
+    } else {
+      const near = Math.round(localScroll * (reduced ? 1 : 0.62));
+      for (let i = Math.floor(near / 180) - 1; i < (near + width) / 180 + 1; i++) {
+        const x = i * 180 + 28 - near;
+        poly(c, [[x-9,0],[x+14,0],[x+10,22],[x+4,22],[x+4,44],[x,54],[x-3,35]], "#1e3942");
+        rect(c, x + 1, 0, 2, 33, "#426169");
+        rect(c, x + 4, 4, 3, 15, "#304e57");
+      }
+      for (let i = 0; i < 12; i++) {
+        const x = ((i * 97 - drift * 0.6) % 760 + 760) % 760;
+        const y = 105 + Math.floor(hash(i, 8) * 150);
+        rect(c, x, y, 1, 1, hash(i, Math.floor(elapsed / (reduced ? 1e9 : 1600))) > 0.5 ? "#619a94" : "#35575c");
       }
     }
-    const near = Math.round(scrollX * (reduced ? 1 : 0.62));
-    if (!cave)
-      for (
-        let gx = Math.floor(near / 190) - 1;
-        gx < (near + width) / 190 + 1;
-        gx++
-      ) {
-        const x = gx * 190 - near + 70;
-        rect(c, x, 0, 4, 85 + hash(gx, 2) * 45, "#373440");
-        for (let y = 0; y < 90; y += 7) {
-          rect(c, x - 1, y, 6, 3, "#50434a");
-          rect(c, x + 1, y + 1, 2, 1, "#22232e");
-        }
-        torch(c, x + 80, 220, elapsed + gx * 300, reduced);
-      }
-    if (cave)
-      for (
-        let gx = Math.floor(near / 135) - 1;
-        gx < (near + width) / 135 + 1;
-        gx++
-      ) {
-        const x = gx * 135 - near + 34;
-        poly(
-          c,
-          [
-            [x - 14, 0],
-            [x + 18, 0],
-            [x + 12, 43],
-            [x + 2, 74],
-            [x - 6, 43],
-          ],
-          "#284248",
-        );
-        rect(c, x + 2, 2, 3, 32, "#365359");
-      }
-    const shade = c.createLinearGradient(0, 200, 0, 360);
-    shade.addColorStop(0, "#10131b00");
-    shade.addColorStop(1, cave ? "#0a2027aa" : "#12121cbb");
-    c.fillStyle = shade;
-    c.fillRect(0, 180, width, 200);
+    // Stepped darkness keeps the rear-wall base distinct from the playable floor.
+    for (let y = 280; y < 440; y += 16)
+      rect(c, 0, y, width, 16, `rgba(5,12,20,${Math.min(0.7, (y - 264) / 240)})`);
     c.restore();
   }
 }
@@ -286,42 +183,34 @@ export function paintTerrain(c: CanvasRenderingContext2D, course: Course) {
       const x = s.x + room.offset,
         cave = room.theme === "cave",
         palette = cave ? rock : stone;
+      c.save();
+      c.beginPath();
+      c.rect(x, s.y, s.w, s.h);
+      c.clip(); // Texture never bleeds into a pit or changes a platform's silhouette.
       rect(c, x, s.y, s.w, s.h, palette[0]);
-      for (let y = s.y + 8; y < s.y + s.h; y += 16)
-        for (let bx = x; bx < x + s.w; bx += 32) {
-          const w = Math.min(30, x + s.w - bx - 1);
-          if (w < 1) continue;
-          rect(
-            c,
-            bx + 1,
-            y,
-            w,
-            14,
-            palette[Math.floor(hash(bx, y) * palette.length)],
-          );
-          if (hash(bx, y) > 0.45)
-            rect(
-              c,
-              bx + 3,
-              y + 2,
-              Math.min(w - 2, 9),
-              1,
-              cave ? "#2d4647" : "#3a3b43",
-            );
-        }
-      rect(c, x, s.y, s.w, 3, cave ? "#93af8b" : "#a9a08a");
-      rect(c, x, s.y + 3, s.w, 4, cave ? "#465f54" : "#656052");
-      for (let tx = x + 4; tx < x + s.w; tx += 16) {
-        rect(c, tx, s.y, 1, 3, cave ? "#374c48" : "#5b564c");
-        if (cave && hash(tx, 0) > 0.5) rect(c, tx, s.y + 6, 3, 6, "#3d6860");
+      for (let y = s.y + 8, row = 0; y < s.y + s.h; y += 18, row++) {
+        for (let bx = x - (row % 2) * 18; bx < x + s.w; bx += 36)
+          masonry(c, bx + 1, y, 34, 16, bx, cave);
       }
+      for (let tx = x; tx < x + s.w; tx += 18) {
+        const top = cave ? "#bdd0a9" : "#e4d3a3";
+        rect(c, tx, s.y, 17, 2, top);
+        rect(c, tx, s.y + 2, 17, 4, cave ? "#819983" : "#af9e7d");
+        rect(c, tx + 1, s.y + 6, 16, 2, cave ? "#4a655d" : "#796c54");
+        rect(c, tx + 17, s.y + 1, 1, 7, "#263239");
+        if (hash(tx, s.y) > 0.5) {
+          rect(c, tx + 4, s.y + 2, 2, 1, top);
+          rect(c, tx + 6, s.y + 3, 1, 2, "#6a6b59");
+        }
+      }
+      c.restore();
     }
     if (room.theme === "dungeon") {
       // A broken stone threshold makes the change of theme part of the world.
       const x = room.offset + room.width - 32;
       rect(c, x, 128, 16, 184, "#35333b");
       rect(c, x - 7, 120, 30, 10, "#6a6262");
-      for (let y = 142; y < 306; y += 22) rect(c, x, y, 16, 2, "#50484a");
+      for (let y = 140; y < 304; y += 18) masonry(c, x, y, 16, 16, y);
       rect(c, x + 32, 136, 12, 176, "#294044");
       rect(c, x + 27, 128, 24, 8, "#65786d");
       rect(c, x - 6, 304, 58, 8, "#a8a18a");
@@ -374,22 +263,30 @@ export function paintHazards(
         rect(c, x + 4, h.y + 5, 1, 6, "#fff0b4");
       }
     } else {
-      rect(c, h.x - 4, h.y + h.h - 4, h.w + 8, 5, "#5e4142");
-      rect(c, h.x - 2, h.y + h.h - 4, h.w + 4, 2, "#d47858");
+      const base = h.y + h.h;
+      rect(c, h.x - 4, base - 5, h.w + 8, 6, "#202731");
+      rect(c, h.x - 3, base - 5, h.w + 6, 1, "#c88b5b");
+      rect(c, h.x - 3, base - 1, h.w + 6, 1, "#805340");
+      for (let x = h.x - 1; x < h.x + h.w + 2; x += 5) {
+        rect(c, x, base - 4, 2, 3, "#85513b");
+        rect(c, x, base - 4, 1, 1, "#edb777");
+      }
       if (active(h)) {
         for (let x = h.x; x < h.x + h.w; x += 7) {
           const height =
             h.h -
             4 -
             (reduced ? 6 : Math.floor(hash(x, Math.floor(elapsed / 100)) * 12));
-          rect(c, x, h.y + h.h - height, 6, height - 4, "#bf4d3d");
+          const tip = base - height;
+          poly(c, [[x,base-5],[x,tip+12],[x+2,tip+7],[x+3,tip],
+            [x+5,tip+9],[x+6,tip+15],[x+6,base-5]], "#c2482d");
           rect(
             c,
             x + 1,
             h.y + h.h - height + 9,
             4,
             Math.max(2, height - 14),
-            "#fa9454",
+            "#ff932f",
           );
           rect(c, x + 2, h.y + h.h - 25, 2, 20, "#ffdfa0");
         }

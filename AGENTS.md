@@ -79,18 +79,18 @@ Keep behaviour understandable enough that players and spectators can connect a c
 
 Updated character direction, 6 October 2026: preserve contributors' original character artwork rather than converting every character into pixel art. The mismatch between character styles is intentional and supports the user-generated character identity. Render detailed character artwork at display resolution so small in-game sizing does not unnecessarily discard its detail; preserve hard edges for artwork originally authored as pixel art. This overrides the common pixel-style requirements below for characters only. Scenery and interface retain the retro pixel-art direction.
 
-The agreed aesthetic is a cohesive retro arcade game, described by the creators as 8-bit. Treat this as a pixel-art direction rather than a requirement to emulate a historical console's technical limitations.
+Updated scenery direction, 6 October 2026: the approved Ember Vault visual establishes a detailed **16-bit-inspired retro arcade** style for all existing and future rooms. This supersedes the original 8-bit scenery brief. Use richly textured, bevelled stonework, weathered metal, faceted rock, recessed architecture, stepped lighting and restrained atmospheric layers. Keep crisp square pixel clusters; avoid photorealism, painterly blur, smooth gradients and isometric/perspective floors. This is an art direction, not historical hardware emulation. Follow `docs/art/style-guide.md` and its checked-in scenery references for future contributions.
 
 - Flat, side-on 2D platforming with horizontal travel and vertical jumps.
-- Deliberately low-resolution sprites, tiled scenery, effects and interface elements.
+- Detailed pixel-art scenery and effects on the existing 640×360 logical viewport; preserve the retro pixel interface and original contributor character artwork.
 - A consistent pixel scale and crisp rendering across the game.
-- A 1970s/1980s arcade and CRT-inspired colour treatment and pixel typography.
+- A late-1980s/1990s 16-bit arcade colour treatment with pixel typography and restrained CRT influence.
 - Room scenes with character and atmosphere, including dungeons, caves, statues, flames, chains and rock formations where appropriate to the brief.
 - Personalised characters that can be eccentric, funny and visually distinctive within the shared style.
 
 References raised in the discussion include retro handheld games, Doom for aspects of the pixel texture and arcade atmosphere, and Street Fighter/Mortal Kombat for rich stage backgrounds. These are references for qualities, not instructions to copy their assets or reproduce their gameplay. The game remains a side-on platformer. High-resolution rendering and surreal diorama presentation are outside the chosen direction.
 
-Candidate treatments discussed, but not yet a final approved palette or asset specification: dark charcoal, warm cream, amber, tomato red, turquoise and electric purple; chunky title lettering; a simpler readable bitmap font for stats; subtle glow and optional scanlines. Establish the final palette, font and sprite dimensions together when producing the first visual sample. Keep readability and hazard recognition ahead of CRT effects.
+Established scenery palette: cool charcoal/slate/indigo stone, amber torchlight, warm cream platform edges, teal cave rock and muted turquoise minerals. Hazard flames use brighter orange and pale yellow cores. Other interface treatments initially discussed: dark charcoal, warm cream, amber, tomato red, turquoise and electric purple; chunky title lettering; a simpler readable bitmap font for stats; subtle glow and optional scanlines. Establish the final palette, font and sprite dimensions together when producing the first visual sample. Keep readability and hazard recognition ahead of CRT effects.
 
 ## Camera and layered backgrounds
 
@@ -128,7 +128,7 @@ The concept above is settled. These details remain open and must not be presente
 
 - Repository details, application framework and game engine. The web app target and Webflow Cloud hosting are confirmed.
 - Webflow Cloud project/site, deployment path and domain configuration.
-- Exact sprite dimensions, room dimensions, pixel scale, final palette and fonts.
+- Future room dimensions and per-character sprite dimensions. The current slice and `docs/art/style-guide.md` establish the scenery rendering scale and palette; preserve them when extending it.
 - Initial character roster, superpowers, stat meanings and activation rules in each mode.
 - Exact manual control bindings and any input support beyond the keyboard working default.
 - How much of the course an autonomous character can perceive or plan ahead of; camera visibility does not automatically define its knowledge.

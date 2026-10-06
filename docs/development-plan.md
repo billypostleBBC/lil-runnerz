@@ -111,3 +111,20 @@ Verified with Codex absent:
 - `npm test`: 22 passing tests covering the existing game rules plus roster validation, lookup, availability fallbacks, runtime selection metadata and dynamic presentation copy.
 - `npm run check` and `npm run build`: pass. Vite retains the documented non-blocking Phaser bundle-size advisory and notes the intentionally absent local Codex path.
 - Browser checks: Bill-e Bot is selected by default; Codex is visibly disabled with “Local artwork required”; Bill-e Bot starts and completes autonomous play; manual mode starts; retry retains Bill-e Bot; selected copy, portrait, shield timing and outcome screens update without page errors.
+
+## 16-bit scenery rollout — 6 October 2026
+
+Billy approved the Ember Vault concept and authorised applying the style across the game and documentation. Both rooms now use original generated backdrop panoramas plus code-drawn textured platforms, chains, torches and hazards. The original room definitions, collision rules, character assets and input paths are unchanged. `AGENTS.md`, README, room briefs, character wording and provenance now point to the standing contract in `docs/art/style-guide.md`; exact built-in imagegen prompts are preserved in `docs/art/generation-prompts.md`.
+
+Scenery loads locally before play is enabled, with a 15-second request timeout and the existing visible reload-error UI on failure. The two PNGs add approximately 3.3 MiB before HTTP compression. No runtime AI dependency, new package or service was added.
+
+Verification for this change:
+
+- All 25 existing automated tests pass. TypeScript and the production build pass; Vite retains its existing Phaser bundle-size advisory.
+- Chromium desktop screenshots inspected for dungeon, cave and transition; silhouettes remain tied to unchanged collision definitions. Detailed background art, separate parallax layers, platform edges and active flames are visible.
+- Autonomous traversal reached the finish. Production-preview manual keyboard traversal also reached the finish; movement, jumps and shield were exercised through both rooms.
+- Manual pit death, focus-loss pause with an active shield, explicit resume and clearing held input were checked.
+- Blocking the dungeon PNG in the browser produced the visible scenery-loading error and reload action. The browser-only block was removed and loading recovered.
+- Production preview at 375px and reduced motion checked separately; see the evidence record for the final outcome.
+
+Evidence: `output/playwright/16bit-*.png` (local screenshots) and `docs/art/verification.md`. This is a local implementation, not a Webflow Cloud deployment. Cross-browser/device performance, native OS focus switching and hosted mount-path checks remain outside this verification pass. Review the local production preview with `npm run preview` after building.

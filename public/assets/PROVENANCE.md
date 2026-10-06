@@ -1,4 +1,4 @@
-# Character asset provenance
+# Asset provenance
 
 ## Bill-e Bot
 
@@ -15,7 +15,11 @@ codex.webp is an unchanged copy of the bundled Codex pet sheet:
 
 Used at the user's request for the local prototype. Not an assertion of redistribution rights; replace or resolve rights before a public release. The original grid is 8 columns by 11 rows, 192×208 pixels per cell.
 
-Scenery is original code-generated pixel artwork in `src/game/art.ts`. Fonts are bundled from Fontsource with their licences.
+## Scenery — 6 October 2026
+
+`scenery/ember-vault.png` and `scenery/hollow-grotto.png` are original AI-generated background panoramas made with the built-in imagegen tool for this project, following Billy's approved 16-bit Ember Vault concept. The reference was generated in the same conversation from the local dungeon screenshot. These delivered scenery images contain no characters, UI or copied sprite pixels. The approved concept contained the temporary Codex character, so that full concept remains local rather than being added to the public repository.
+
+The user explicitly authorised implementing and carrying this visual style forwards. This records origin and task authorisation, not an independent legal rights assessment. Both PNG originals are checked in unchanged and loaded locally. Exact generation prompts: `docs/art/generation-prompts.md`. Foreground platforms, chains, torch flames and hazard effects are original code-drawn artwork in `src/game/art.ts`. Fonts are bundled from Fontsource with their licences.
 
 ## Marty McFly
 

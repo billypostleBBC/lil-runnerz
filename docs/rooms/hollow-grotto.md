@@ -15,3 +15,7 @@ All coordinates below are local; add 1440 for the current course's world coordin
 - Course finish: local X=1344 (world X=2784), marked by a lit doorway and chequered flag.
 
 See [layout.svg](layout.svg) for the original spatial diagram. The second pit has both a lower jump and an elevated route; no bypass may be silently added.
+
+## Art treatment — 6 October 2026
+
+Follow the approved [16-bit scenery guide](../art/style-guide.md). The bundled background is decorative; platform silhouettes, gap widths, ledges, hazard bounds and timings remain defined by this brief and `src/content/rooms.ts`. The graphic upgrade does not change the route or collision data.

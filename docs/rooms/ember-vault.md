@@ -12,3 +12,7 @@ A forgotten stone dungeon with barred arches, worn statues, suspended chains and
 - Last 96 pixels: clear level floor, exit Y=312. The threshold is decorative and must not obstruct the player.
 
 See [layout.svg](layout.svg) for the original spatial diagram. Collision definitions are separately maintained in `src/content/rooms.ts`.
+
+## Art treatment — 6 October 2026
+
+Follow the approved [16-bit scenery guide](../art/style-guide.md). The bundled background is decorative; platform silhouettes, gap widths, ledges, hazard bounds and timings remain defined by this brief and `src/content/rooms.ts`. The graphic upgrade does not change the route or collision data.

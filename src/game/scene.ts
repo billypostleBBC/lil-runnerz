@@ -16,7 +16,7 @@ import {
   transition,
   validateCharacters,
 } from "./rules";
-import { paintBackground, paintHazards, paintTerrain } from "./art";
+import { paintBackground, paintHazards, paintTerrain, type Scenery } from "./art";
 import { ManualInput } from "./input";
 import { CharacterArtwork } from "./character-artwork";
 import type { Actions, Character, CharacterDefinition, Mode, Snapshot, Status } from "./types";
@@ -31,6 +31,7 @@ export class CourseScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite;
   private characterArtwork!: CharacterArtwork;
   private backdrop!: Phaser.Textures.CanvasTexture;
+  private scenery!: Scenery;
   private hazardsArt!: Phaser.Textures.CanvasTexture;
   private shield!: Phaser.GameObjects.Graphics;
   private manual!: ManualInput;
@@ -55,7 +56,19 @@ export class CourseScene extends Phaser.Scene {
   ) {
     super("course");
   }
+  preload() {
+    this.load.image("scenery:dungeon", `${import.meta.env.BASE_URL}assets/scenery/ember-vault.png`, { responseType: "blob", timeout: 15000 });
+    this.load.image("scenery:cave", `${import.meta.env.BASE_URL}assets/scenery/hollow-grotto.png`, { responseType: "blob", timeout: 15000 });
+  }
   create() {
+    if (!this.textures.exists("scenery:dungeon") || !this.textures.exists("scenery:cave")) {
+      this.onError("Room scenery could not be loaded. Check your connection and reload the page.");
+      return;
+    }
+    this.scenery = {
+      dungeon: this.textures.get("scenery:dungeon").getSourceImage() as HTMLImageElement,
+      cave: this.textures.get("scenery:cave").getSourceImage() as HTMLImageElement,
+    };
     validateCharacters(characters);
     this.backdrop = this.textures.createCanvas("backdrop", 640, 360)!;
     this.add
@@ -412,6 +425,7 @@ export class CourseScene extends Phaser.Scene {
       this.run.elapsed,
       this.reduced,
       this.course,
+      this.scenery,
     );
     this.backdrop.refresh();
     paintHazards(

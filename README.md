@@ -31,6 +31,12 @@ Choose **Choose your character**, select a runner, then choose **Auto-run** or *
 
 One life; retry starts the whole course again. Shield protects against contact hazards for 0.8 seconds, with a 4-second cooldown from activation. It does not save you from a pit. Timers freeze while paused. Flames show an amber warning 0.4 seconds before reigniting. The run ends at the cave's lit doorway and chequered flag.
 
+## Visual direction
+
+Scenery follows the approved 16-bit Ember Vault treatment: detailed worn masonry, recessed arches, weathered chains, stepped amber lighting and readable pale platform edges. The Hollow Grotto uses the same pixel craftsmanship in cool teal rock and minerals. Background panoramas are bundled locally; platforms, vents, chains, torches and effects are drawn separately, so decorative art cannot change collisions. All room geometry and gameplay rules remain independent of graphics.
+
+See [the art guide](docs/art/style-guide.md), [generation prompts](docs/art/generation-prompts.md) and [asset provenance](public/assets/PROVENANCE.md). Character artwork keeps its original style. Scenery loading completes before play is enabled; a missing backdrop shows a reload error. No runtime AI service is involved.
+
 ## Tune autonomous behaviour
 
 Edit the relevant entry in `src/content/character.ts`. Changes are applied on reload. Each `controllerProfile` affects autonomous decisions only; no server or admin screen is needed.
@@ -53,15 +59,16 @@ The character's physical `speed` (160px/s), `jumpSpeed` (410px/s upwards) and `g
 - `src/content/character.ts`: the character roster, display copy, physical capabilities, power and controller profiles.
 - `src/game/rules.ts`: validation, course assembly, power/run rules and autonomous decisions.
 - `src/game/scene.ts`: shared Phaser movement/collision, simulation timing, input selection and camera.
-- `src/game/art.ts`: original deterministic pixel scenery, clearly separated from collision data.
+- `src/game/art.ts`: detailed pixel foregrounds and animated effects, clearly separated from collision data.
+- `public/assets/scenery/`: bundled 16-bit background panoramas; `docs/art/style-guide.md` is the art contract for future rooms.
 - `docs/rooms/`: authored creative briefs and a separate reference layout. No contributor source images were supplied for this slice.
-- `public/assets/PROVENANCE.md`: Bill-e Bot and temporary Codex provenance; Fontsource packages contain font licences.
+- `public/assets/PROVENANCE.md`: character and scenery provenance; Fontsource packages contain font licences.
 
 A room uses top-left origin, X right, Y down, in logical pixels. Current rooms are 1440×432 with floor Y=312. Width may differ. Neighbouring rooms must share world height and exit/entrance floor height; no implicit vertical teleport or scaling is performed. Entrance and exit specify clear floor widths (96px in these examples, minimum 64px). Validation rejects missing support, obstructed portals, out-of-bounds geometry, duplicate IDs and malformed hazards.
 
 The course assembler adds horizontal offsets once. Both rooms are loaded into the same physics world. Crossing the seam does not recreate the character or reset velocity, shield state, timers or camera. Solid platforms use rectangular collision and are not one-way. Decorative pillars, crystals and rocks are not solid; continuous pale top edges identify platforms. The authored briefs are the reference for checking layout intent.
 
-To author another local room, copy a room definition, assign a unique ID, preserve the connection contract and add it to the room list. Update the themed art if a new theme is needed. Current scenery supports dungeon and cave only; this is not yet a generic room editor.
+To author another local room, copy a room definition, assign a unique ID, preserve the connection contract and add it to the room list. Follow [the 16-bit art guide](docs/art/style-guide.md) and update the themed art if a new theme is needed. Current scenery supports dungeon and cave only; this is not yet a generic room editor.
 
 ### Contribute a character
 
