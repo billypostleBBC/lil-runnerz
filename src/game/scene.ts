@@ -397,6 +397,7 @@ export class CourseScene extends Phaser.Scene {
   snapshot(): Snapshot {
     const body = this.player?.body as Phaser.Physics.Arcade.Body | undefined;
     return {
+      characterId: character.id,
       status: this.run.status,
       mode: this.run.mode,
       elapsed: Math.round(this.run.elapsed),

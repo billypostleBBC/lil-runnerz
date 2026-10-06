@@ -52,6 +52,15 @@ export interface ControllerProfile {
   powerTriggerDistance: number;
   stuckMs: number;
 }
+export interface CharacterDefinition {
+  character: Character;
+  controllerProfile: ControllerProfile;
+  description: string;
+  tagline: string;
+  frameWidth: number;
+  frameHeight: number;
+  bundled: boolean;
+}
 export interface Actions {
   move: -1 | 0 | 1;
   jump: boolean;
@@ -70,6 +79,7 @@ export interface Run {
   shieldAt: number;
 }
 export interface Snapshot {
+  characterId: string;
   status: Status;
   mode: Mode;
   elapsed: number;

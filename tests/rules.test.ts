@@ -15,6 +15,12 @@ import {
 } from "../src/game/rules";
 import { rooms } from "../src/content/rooms";
 import { character, controllerProfile } from "../src/content/character";
+import {
+  characters,
+  defaultCharacterId,
+  getCharacter,
+} from "../src/content/character";
+import { validateCharacters } from "../src/game/rules";
 
 describe("shared run and shield rules", () => {
   it("limits shield duration and activation cooldown in simulation time", () => {
@@ -57,6 +63,29 @@ describe("shared run and shield rules", () => {
 });
 
 describe("contribution boundaries", () => {
+  it("provides a validated roster with Bill-e Bot as the public default", () => {
+    expect(defaultCharacterId).toBe("bill-e-bot");
+    expect(getCharacter("bill-e-bot").character.name).toBe("Bill-e Bot");
+    expect(getCharacter("codex").character.name).toBe("Codex");
+    expect(() => getCharacter("missing")).toThrow(/unknown character/i);
+    expect(() => validateCharacters(characters)).not.toThrow();
+  });
+  it("rejects duplicate character IDs and unsafe nested assets", () => {
+    expect(() => validateCharacters([characters[0], characters[0]])).toThrow(
+      /duplicate/i,
+    );
+    expect(() =>
+      validateCharacters([
+        {
+          ...characters[0],
+          character: {
+            ...characters[0].character,
+            asset: "https://untrusted.test/pet.png",
+          },
+        },
+      ]),
+    ).toThrow(/asset/i);
+  });
   it("assembles room-local geometry without mutating definitions", () => {
     const before = JSON.stringify(rooms);
     const course = assembleCourse(rooms);

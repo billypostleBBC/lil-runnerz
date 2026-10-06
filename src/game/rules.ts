@@ -2,6 +2,7 @@ import type {
   Actions,
   Actor,
   Character,
+  CharacterDefinition,
   ControllerProfile,
   Course,
   Hazard,
@@ -67,6 +68,42 @@ export function validateCharacter(c: Character): void {
       finite(c.power.cooldownMs, c.power.durationMs, 30000),
     "Shield duration and cooldown are invalid.",
   );
+}
+export function validateCharacters(
+  definitions: readonly CharacterDefinition[],
+): void {
+  assert(
+    Array.isArray(definitions) && definitions.length > 0,
+    "Character roster needs at least one character.",
+  );
+  const ids = new Set<string>();
+  for (const definition of definitions) {
+    validateCharacter(definition.character);
+    validateProfile(definition.controllerProfile);
+    assert(
+      !ids.has(definition.character.id),
+      `Duplicate character ID: ${definition.character.id}`,
+    );
+    ids.add(definition.character.id);
+    assert(
+      typeof definition.description === "string" &&
+        definition.description.trim().length > 0 &&
+        typeof definition.tagline === "string" &&
+        definition.tagline.trim().length > 0,
+      `Character ${definition.character.id}: display copy is required.`,
+    );
+    assert(
+      Number.isInteger(definition.frameWidth) &&
+        definition.frameWidth > 0 &&
+        Number.isInteger(definition.frameHeight) &&
+        definition.frameHeight > 0,
+      `Character ${definition.character.id}: frame dimensions must be positive integers.`,
+    );
+    assert(
+      typeof definition.bundled === "boolean",
+      `Character ${definition.character.id}: bundled status is required.`,
+    );
+  }
 }
 export function assembleCourse(rooms: Room[]): Course {
   assert(
