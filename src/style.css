@@ -594,6 +594,10 @@ kbd {
   .course-heading {
     padding: 25px 0 20px;
   }
+  .viewport:has(.screen:not([hidden])) {
+    aspect-ratio: auto;
+    height: 440px;
+  }
   h1 {
     font-size: 20px;
   }
@@ -666,7 +670,6 @@ kbd {
     padding: 3px;
   }
   .viewport:has(.screen:not([hidden])) {
-    aspect-ratio: auto;
     height: 520px;
   }
   #game {
