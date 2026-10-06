@@ -1,13 +1,11 @@
 import Phaser from "phaser";
 import "./style.css";
-import { CourseScene } from "./game/scene";
+import { characterPresentation } from "./character-presentation";
+import { checkCharacterAvailability } from "./content/character-availability";
+import { characters, defaultCharacterId, getCharacter } from "./content/character";
 import { rooms } from "./content/rooms";
-import { character, controllerProfile } from "./content/character";
-import {
-  assembleCourse,
-  validateCharacter,
-  validateProfile,
-} from "./game/rules";
+import { CourseScene } from "./game/scene";
+import { assembleCourse, validateCharacters } from "./game/rules";
 import type { Mode, Snapshot, Status } from "./game/types";
 
 const el = <T extends HTMLElement = HTMLElement>(id: string) =>
@@ -20,30 +18,57 @@ let current: Snapshot | undefined;
 let previousStatus: Status | undefined;
 let previousRoom = -1;
 let scene: CourseScene;
+let sceneReady = false;
+let charactersReady = false;
 let loaded = false;
+let selectedCharacterId = defaultCharacterId;
+
 const mode = () =>
   document.querySelector<HTMLInputElement>("input[name=mode]:checked")!
     .value as Mode;
+const selectedCharacter = () => getCharacter(selectedCharacterId);
+
 function focusCanvas() {
   const canvas = document.querySelector("canvas");
-  if (canvas) {
-    canvas.tabIndex = 0;
-    canvas.setAttribute(
-      "aria-label",
-      "Game world. Use arrow keys to move, Space to jump and X for shield. Escape pauses.",
-    );
-    canvas.focus({ preventScroll: true });
-  }
+  if (!canvas) return;
+  canvas.tabIndex = 0;
+  canvas.setAttribute(
+    "aria-label",
+    "Game world. Use arrow keys to move, Space to jump and X for shield. Escape pauses.",
+  );
+  canvas.focus({ preventScroll: true });
 }
+
 function modeNote() {
   el("screen-note").textContent =
     mode() === "manual"
       ? "← → or A/D: move · Space: jump · X: shield · Esc: pause"
       : "One life · Two rooms · A shield up your sleeve";
 }
+
+function updateSelectedPresentation() {
+  const definition = selectedCharacter();
+  const presentation = characterPresentation(definition, mode());
+  el("watch-label").textContent = presentation.watchLabel;
+  el("character-heading").childNodes[0].textContent =
+    `${definition.character.name} `;
+  el("character-tagline").textContent = definition.tagline;
+  el("character-description").textContent = definition.description;
+  el("power-summary").textContent =
+    `${presentation.shieldSummary} · Pits are still pits.`;
+  const portrait = document.querySelector<HTMLElement>(".pet-portrait")!;
+  portrait.style.backgroundImage = `url("${presentation.portraitAsset}")`;
+  portrait.style.backgroundSize = `${62 * 8}px ${68 * 11}px`;
+  if (loaded && current?.status === "ready") {
+    primary.textContent = presentation.callToAction;
+  }
+  modeNote();
+}
+
 function announce(message: string) {
   el("announcement").textContent = message;
 }
+
 function showError(message: string) {
   el("load-error").hidden = false;
   el("error-message").textContent = message;
@@ -52,9 +77,62 @@ function showError(message: string) {
   announce(message);
   el("reload").focus();
 }
+
+function enableWhenReady() {
+  loaded = sceneReady && charactersReady;
+  primary.disabled = !loaded;
+  if (loaded) updateSelectedPresentation();
+}
+
+async function initialiseCharacterOptions() {
+  const options = el("character-options");
+  const checks = await Promise.all(
+    characters.map(async (definition) => ({
+      definition,
+      availability: await checkCharacterAvailability(definition),
+    })),
+  );
+  options.replaceChildren();
+  for (const { definition, availability } of checks) {
+    const id = definition.character.id;
+    const label = document.createElement("label");
+    const input = document.createElement("input");
+    input.type = "radio";
+    input.name = "character";
+    input.value = id;
+    input.checked = id === selectedCharacterId;
+    input.disabled = !availability.available;
+    if (availability.reason) input.setAttribute("aria-describedby", `${id}-reason`);
+
+    const card = document.createElement("span");
+    card.className = "character-card";
+    const portrait = document.createElement("i");
+    portrait.className = "character-card-portrait";
+    portrait.setAttribute("aria-hidden", "true");
+    portrait.style.backgroundImage = `url("/${definition.character.asset}")`;
+    const copy = document.createElement("span");
+    const name = document.createElement("b");
+    name.textContent = definition.character.name.toUpperCase();
+    const detail = document.createElement("small");
+    detail.id = `${id}-reason`;
+    detail.textContent = availability.reason ?? definition.tagline;
+    copy.append(name, detail);
+    card.append(portrait, copy);
+    label.append(input, card);
+    options.append(label);
+    input.addEventListener("change", () => {
+      selectedCharacterId = id;
+      updateSelectedPresentation();
+    });
+  }
+  charactersReady = true;
+  enableWhenReady();
+}
+
 function update(s: Snapshot) {
   current = s;
   const room = rooms[s.room];
+  const active = getCharacter(s.characterId);
   el("room-number").textContent = `0${s.room + 1}`;
   el("room-title").textContent = room.name.toUpperCase();
   el("mode-label").textContent =
@@ -74,7 +152,7 @@ function update(s: Snapshot) {
       : "READY";
   el("shield-status").textContent = shieldLabel;
   el("shield-fill").style.width =
-    `${s.shield ? 100 : (1 - s.cooldown / character.power.cooldownMs) * 100}%`;
+    `${s.shield ? 100 : (1 - s.cooldown / active.character.power.cooldownMs) * 100}%`;
   el("route-fill").style.width = `${s.progress * 100}%`;
   document
     .querySelector(".route-track")!
@@ -91,6 +169,7 @@ function update(s: Snapshot) {
   screen.hidden = s.status === "running";
   el("game").inert = s.status !== "running";
   if (s.status === "running") return;
+  el("character-picker").hidden = s.status !== "ready";
   el("mode-picker").hidden = s.status !== "ready";
   secondary.hidden = s.status === "ready";
   el("screen-note").hidden = s.status !== "ready";
@@ -102,9 +181,7 @@ function update(s: Snapshot) {
     el("screen-description").innerHTML =
       "Jump the gaps. Watch the flames.<br>Keep your shield for the tricky bits.";
     primary.textContent = loaded
-      ? mode() === "auto"
-        ? "LET CODEX LOOSE →"
-        : "ENTER THE HOLLOW →"
+      ? characterPresentation(selectedCharacter(), mode()).callToAction
       : "LOADING THE WORLD…";
   } else {
     const labels = {
@@ -122,36 +199,41 @@ function update(s: Snapshot) {
   announce(`${el("screen-title").textContent} ${s.reason}`);
   if (loaded) primary.focus({ preventScroll: true });
 }
+
 primary.addEventListener("click", () => {
   if (!loaded) return;
-  if (current?.status === "paused") scene.resume();
-  else
-    scene.start(
-      current?.status === "ready" ? mode() : (current?.mode ?? mode()),
-    );
-  focusCanvas();
+  if (current?.status === "paused") {
+    scene.resume();
+    focusCanvas();
+    return;
+  }
+  const runMode = current?.status === "ready" ? mode() : (current?.mode ?? mode());
+  const runCharacterId =
+    current?.status === "ready"
+      ? selectedCharacterId
+      : (current?.characterId ?? selectedCharacterId);
+  void scene.start(runMode, runCharacterId).then(() => {
+    if (el("load-error").hidden) focusCanvas();
+  });
 });
 secondary.addEventListener("click", () => {
   scene.menu();
-  document.querySelector<HTMLInputElement>("input[name=mode]:checked")?.focus();
+  document
+    .querySelector<HTMLInputElement>("input[name=character]:checked")
+    ?.focus();
 });
 pause.addEventListener("click", () => scene.pause());
 el("reload").addEventListener("click", () => location.reload());
 document.querySelectorAll("input[name=mode]").forEach((input) =>
-  input.addEventListener("change", () => {
-    if (loaded)
-      primary.textContent =
-        mode() === "auto" ? "LET CODEX LOOSE →" : "ENTER THE HOLLOW →";
-    modeNote();
-  }),
+  input.addEventListener("change", updateSelectedPresentation),
 );
 screen.addEventListener("keydown", (event) => {
   if (event.key !== "Tab") return;
   const focusable = [
     ...screen.querySelectorAll<HTMLElement>(
-      "button:not([hidden]):not(:disabled),input:checked",
+      "button:not([hidden]):not(:disabled),input:checked:not(:disabled)",
     ),
-  ].filter((e) => !e.closest("[hidden]"));
+  ].filter((entry) => !entry.closest("[hidden]"));
   const first = focusable[0],
     last = focusable.at(-1);
   if (event.shiftKey && document.activeElement === first) {
@@ -164,16 +246,13 @@ screen.addEventListener("keydown", (event) => {
 });
 
 try {
-  validateCharacter(character);
-  validateProfile(controllerProfile);
+  validateCharacters(characters);
   assembleCourse(rooms);
   scene = new CourseScene(
     update,
     () => {
-      loaded = true;
-      primary.disabled = false;
-      primary.textContent =
-        mode() === "auto" ? "LET CODEX LOOSE →" : "ENTER THE HOLLOW →";
+      sceneReady = true;
+      enableWhenReady();
     },
     showError,
   );
@@ -189,7 +268,7 @@ try {
     physics: {
       default: "arcade",
       arcade: {
-        gravity: { x: 0, y: character.gravity },
+        gravity: { x: 0, y: 0 },
         fixedStep: true,
         fps: 60,
         debug: false,
@@ -202,11 +281,18 @@ try {
   });
   const observer = new ResizeObserver(() => game.scale.refresh());
   observer.observe(el("game"));
-  // Read-only diagnostics for reproducible local verification; no gameplay overrides.
+  void initialiseCharacterOptions().catch((error) => {
+    showError(
+      error instanceof Error
+        ? error.message
+        : "Character artwork could not be checked.",
+    );
+  });
   Object.defineProperty(window, "__jumpa", {
     value: Object.freeze({
       snapshot: () => scene.snapshot(),
-      content: () => structuredClone({ rooms, character, controllerProfile }),
+      content: () =>
+        structuredClone({ rooms, characters, selectedCharacterId }),
     }),
     writable: false,
   });

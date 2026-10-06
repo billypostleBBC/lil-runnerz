@@ -2,6 +2,7 @@ node_modules/
 dist/
 .DS_Store
 .playwright-cli/
+.worktrees/
 
 # Temporary third-party artwork and captures remain local pending rights review.
 public/assets/codex.webp

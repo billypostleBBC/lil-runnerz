@@ -75,6 +75,14 @@
                 Jump the gaps. Watch the flames.<br />Keep your shield for the
                 tricky bits.
               </p>
+              <fieldset id="character-picker">
+                <legend>Choose your character</legend>
+                <div
+                  class="character-options"
+                  id="character-options"
+                  aria-label="Choose your character"
+                ></div>
+              </fieldset>
               <fieldset id="mode-picker">
                 <legend>Choose how to play</legend>
                 <div class="mode-options">
@@ -85,7 +93,7 @@
                       value="auto"
                       checked
                     /><span
-                      ><b>WATCH CODEX</b
+                      ><b id="watch-label">WATCH BILL-E BOT</b
                       ><small>It finds its own way</small></span
                     ></label
                   ><label
@@ -100,7 +108,7 @@
                 <button id="primary" class="primary" disabled>
                   LOADING THE WORLD…</button
                 ><button id="secondary" class="secondary" hidden>
-                  Change mode
+                  Change character or mode
                 </button>
               </div>
               <p class="screen-note" id="screen-note">
@@ -149,8 +157,13 @@
           <div class="pet-portrait" aria-hidden="true"></div>
           <div>
             <p class="eyebrow">YOUR SMALL HERO</p>
-            <h2>Codex <span>the cautiously curious</span></h2>
-            <p>A quick shield. A questionable sense of danger.</p>
+            <h2 id="character-heading">
+              Bill-e Bot
+              <span id="character-tagline">the cheerfully calculated</span>
+            </h2>
+            <p id="character-description">
+              A quick shield. A magnificent moustache.
+            </p>
           </div>
         </div>
         <div class="control-note" id="keyboard-help">
@@ -159,7 +172,7 @@
             <kbd>←</kbd><kbd>→</kbd> Move <kbd>SPACE</kbd> Jump
             <kbd>X</kbd> Shield <kbd>ESC</kbd> Pause
           </p>
-          <span
+          <span id="power-summary"
             >Shield lasts 0.8s · Recharges in 4s · Pits are still pits.</span
           >
         </div>

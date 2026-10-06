@@ -211,7 +211,7 @@ fieldset[hidden] {
 }
 .screen-card {
   text-align: center;
-  max-width: 490px;
+  max-width: 620px;
   width: 100%;
 }
 .screen-card h2 {
@@ -254,6 +254,63 @@ legend {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 9px;
+}
+.character-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin-bottom: 9px;
+}
+.character-options label {
+  position: relative;
+  cursor: pointer;
+}
+.character-options input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.character-card {
+  min-height: 68px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 12px;
+  text-align: left;
+  border: 1px solid #71806a;
+  background: #19231eee;
+}
+.character-options input:checked + .character-card {
+  border-color: var(--accent);
+  background: #3c4d31;
+  color: #eaffd3;
+  box-shadow: inset 0 0 0 1px #abc67f;
+}
+.character-options input:disabled + .character-card {
+  cursor: not-allowed;
+  opacity: 0.55;
+  border-style: dashed;
+}
+.character-card-portrait {
+  flex: none;
+  width: 48px;
+  height: 52px;
+  background-size: 384px 572px;
+  background-position: 0 0;
+  image-rendering: pixelated;
+}
+.character-card b {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 1px;
+  font-weight: 500;
+}
+.character-card small {
+  display: block;
+  margin-top: 7px;
+  font-size: 9px;
+  color: #b2c3a9;
 }
 .mode-options label {
   position: relative;
@@ -537,6 +594,10 @@ kbd {
   .course-heading {
     padding: 25px 0 20px;
   }
+  .viewport:has(.screen:not([hidden])) {
+    aspect-ratio: auto;
+    height: 440px;
+  }
   h1 {
     font-size: 20px;
   }
@@ -561,6 +622,16 @@ kbd {
   }
   .mode-options span {
     padding: 10px 5px;
+  }
+  .character-card {
+    min-height: 58px;
+    padding: 5px 8px;
+    gap: 8px;
+  }
+  .character-card-portrait {
+    width: 38px;
+    height: 42px;
+    background-size: 304px 462px;
   }
   .screen-card .screen-note {
     margin-top: 12px !important;
@@ -599,8 +670,7 @@ kbd {
     padding: 3px;
   }
   .viewport:has(.screen:not([hidden])) {
-    aspect-ratio: auto;
-    height: 395px;
+    height: 520px;
   }
   #game {
     position: absolute;
@@ -617,6 +687,21 @@ kbd {
   }
   .mode-options {
     gap: 6px;
+  }
+  .character-options {
+    gap: 6px;
+  }
+  .character-card {
+    padding: 5px;
+  }
+  .character-card-portrait {
+    display: none;
+  }
+  .character-card b {
+    font-size: 9px;
+  }
+  .character-card small {
+    font-size: 8px;
   }
   .mode-options b {
     font-size: 9px;

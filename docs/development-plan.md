@@ -1,14 +1,14 @@
 # Jumpa — two-room development plan
 
 Date: 5 October 2026
-Status: Stage 1 implemented and locally verified; ready for the agreed human review checkpoint. Further stages and deployment remain unstarted.
+Status: Stage 1 and the second-character selection milestone are implemented and locally verified. Course expansion and deployment remain unstarted.
 Jumpa is a working project label, not a confirmed final game name.
 
 ## Intended result
 
 A polished local browser game for Billy and Ruin to assess: one temporary Codex pet, one working superpower, and a dungeon connected continuously to a cave. Both manual and autonomous modes use the same physics, collision, hazards, power and run-state rules. The room connection is a central acceptance criterion. The user explicitly confirmed that even the subsequent MVP may remain local; Webflow hosting is a later stage, not an acceptance requirement for this slice or the local MVP.
 
-Character selection and course construction screens are deferred. Also excluded: multiplayer, accounts, databases, live AI, public submissions, deployment and remote repository creation. Audio and touch/gamepad controls are deferred implementation defaults.
+Course construction screens remain deferred. Also excluded: multiplayer, accounts, databases, live AI, public submissions and deployment. Audio and touch/gamepad controls are deferred implementation defaults.
 
 ## Proposed implementation defaults
 
@@ -66,7 +66,7 @@ Stop at the complete playable Stage 1 review checkpoint. If three materially dif
 
 ## Later stages — not authorised by this plan
 
-2. Apply feedback, introduce meaningful character choice and expand towards approximately five rooms. Demonstrate an independently authored contribution using documented character/room contracts.
+2. Apply feedback and expand towards approximately five rooms. Character choice now has two entries, and Bill-e Bot demonstrates an independently authored, redistributable contribution using the documented character contract.
 3. Prepare a release candidate for the chosen Webflow Cloud site, mount path and repository. Resolve temporary asset use and run release checks. Deploy only with explicit authorisation, then verify the hosted app and both modes at the actual path.
 
 Course construction UI is deferred; its scope is not defined by this plan.
@@ -100,4 +100,14 @@ Verified:
 
 Evidence and exact limitations: `output/playwright/verification.md`. Playable production preview: http://127.0.0.1:4173/ while the preview server is running. Restart with `npm run preview`; rebuild with `npm run build` after source edits. Full local instructions and contribution/tuning contracts: `README.md`.
 
-Review next: try both modes and judge manual responsiveness, the pet's decisions, the visual treatment and whether the dungeon-to-cave connection feels convincing. Repair this slice from feedback before expanding the roster/course. Character selection, course construction, audio, touch/gamepad, broader browser verification and Webflow work are deferred. No remote repository, deployment or scheduled continuation was created.
+Review next: try both modes and judge manual responsiveness, each pet's decisions, the visual treatment and whether the dungeon-to-cave connection feels convincing. Repair this slice from feedback before expanding the course. Course construction, audio, touch/gamepad, broader browser verification and Webflow work are deferred. No deployment or scheduled continuation was created.
+
+## Character selection milestone — 6 October 2026
+
+Bill-e Bot is now the bundled default character and Codex remains an optional second selection when its authorised local artwork exists. The picker is keyboard accessible, character identity travels through scene snapshots and diagnostics, retry preserves the selected character, and returning to ready state permits a new character or mode choice. Both roster entries currently share the proven shield, movement and controller values.
+
+Verified with Codex absent:
+
+- `npm test`: 22 passing tests covering the existing game rules plus roster validation, lookup, availability fallbacks, runtime selection metadata and dynamic presentation copy.
+- `npm run check` and `npm run build`: pass. Vite retains the documented non-blocking Phaser bundle-size advisory and notes the intentionally absent local Codex path.
+- Browser checks: Bill-e Bot is selected by default; Codex is visibly disabled with “Local artwork required”; Bill-e Bot starts and completes autonomous play; manual mode starts; retry retains Bill-e Bot; selected copy, portrait, shield timing and outcome screens update without page errors.

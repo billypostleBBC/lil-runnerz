@@ -1,12 +1,12 @@
 # Jumpa — Into the hollow
 
-A local two-room platformer slice: one temporary Codex pet, a dungeon leading continuously into a cave, and manual or autonomous play. No accounts, backend, live AI or hosted services are used.
+A local two-room platformer slice with Bill-e Bot and an optional Codex pet, a dungeon leading continuously into a cave, and manual or autonomous play. No accounts, backend, live AI or hosted services are used.
 
 ## Run locally
 
 Repository: [billypostleBBC/lil-runnerz](https://github.com/billypostleBBC/lil-runnerz). Jumpa remains the working in-game name.
 
-**Fresh-clone requirement:** the temporary `public/assets/codex.webp` sprite is excluded from this public repository because redistribution rights are unresolved. The existing local workspace retains it. A clone can run tests and build, but gameplay requires an authorised sprite at that path matching the sheet contract in `public/assets/PROVENANCE.md`; otherwise the game shows its asset-loading error. A redistributable replacement is needed for a self-contained public playable version. Screenshots containing the temporary sprite also remain local.
+Bill-e Bot is bundled at `public/assets/bill-e-bot.png`, so a fresh clone is immediately playable. The temporary `public/assets/codex.webp` sprite remains excluded because redistribution rights are unresolved. When that authorised local file is absent, Codex stays visible in the picker as “Local artwork required” and Bill-e Bot remains playable. Screenshots containing the temporary Codex sprite also remain local.
 
 Node.js 22.12+ (verified here with 24.19.0) and npm:
 
@@ -27,13 +27,13 @@ npm run preview
 
 ## Play
 
-Choose **Watch Codex** or **Take control** before a run. Use left/right arrows or A/D to move, Space to jump, X to shield and Escape to pause. Manual play pauses when focus leaves the canvas. Both modes pause on a window blur or hidden-document event. Resume explicitly; held movement input is cleared. Menus support keyboard navigation and visible focus. Reduced motion removes decorative flame flicker, background drift and camera easing.
+Choose Bill-e Bot or an available Codex, then choose **Watch [character]** or **Take control** before a run. Bill-e Bot is selected by default. Use left/right arrows or A/D to move, Space to jump, X to shield and Escape to pause. Manual play pauses when focus leaves the canvas. Both modes pause on a window blur or hidden-document event. Resume explicitly; held movement input is cleared. Menus support keyboard navigation and visible focus. Reduced motion removes decorative flame flicker, background drift and camera easing.
 
 One life; retry starts the whole course again. Shield protects against contact hazards for 0.8 seconds, with a 4-second cooldown from activation. It does not save you from a pit. Timers freeze while paused. Flames show an amber warning 0.4 seconds before reigniting. The run ends at the cave's lit doorway and chequered flag.
 
 ## Tune autonomous behaviour
 
-Edit `src/content/character.ts`. Changes are applied on reload. `controllerProfile` affects autonomous decisions only; no server or admin screen is needed.
+Edit the relevant entry in `src/content/character.ts`. Changes are applied on reload. Each `controllerProfile` affects autonomous decisions only; no server or admin screen is needed.
 
 | Setting                | Default | Observable effect                                                                                                                  |
 | ---------------------- | ------: | ---------------------------------------------------------------------------------------------------------------------------------- |
@@ -50,21 +50,27 @@ The character's physical `speed` (160px/s), `jumpSpeed` (410px/s upwards) and `g
 ## Content and room contract
 
 - `src/content/rooms.ts`: independent local room definitions and curated order.
-- `src/content/character.ts`: the temporary character, physical capabilities, power and controller profile.
+- `src/content/character.ts`: the character roster, display copy, physical capabilities, power and controller profiles.
 - `src/game/rules.ts`: validation, course assembly, power/run rules and autonomous decisions.
 - `src/game/scene.ts`: shared Phaser movement/collision, simulation timing, input selection and camera.
 - `src/game/art.ts`: original deterministic pixel scenery, clearly separated from collision data.
 - `docs/rooms/`: authored creative briefs and a separate reference layout. No contributor source images were supplied for this slice.
-- `public/assets/PROVENANCE.md`: temporary pet source; Fontsource packages contain font licences.
+- `public/assets/PROVENANCE.md`: Bill-e Bot and temporary Codex provenance; Fontsource packages contain font licences.
 
 A room uses top-left origin, X right, Y down, in logical pixels. Current rooms are 1440×432 with floor Y=312. Width may differ. Neighbouring rooms must share world height and exit/entrance floor height; no implicit vertical teleport or scaling is performed. Entrance and exit specify clear floor widths (96px in these examples, minimum 64px). Validation rejects missing support, obstructed portals, out-of-bounds geometry, duplicate IDs and malformed hazards.
 
 The course assembler adds horizontal offsets once. Both rooms are loaded into the same physics world. Crossing the seam does not recreate the character or reset velocity, shield state, timers or camera. Solid platforms use rectangular collision and are not one-way. Decorative pillars, crystals and rocks are not solid; continuous pale top edges identify platforms. The authored briefs are the reference for checking layout intent.
 
-To author another local example, copy a room definition, assign a unique ID, preserve the connection contract and add it to the room list. Update the themed art if a new theme is needed. Current scenery supports dungeon and cave only; this is not yet a generic room editor. New powers require explicit rules, feedback and tests. Character selection and public contribution workflows are deferred to the next milestone.
+To author another local room, copy a room definition, assign a unique ID, preserve the connection contract and add it to the room list. Update the themed art if a new theme is needed. Current scenery supports dungeon and cave only; this is not yet a generic room editor.
+
+### Contribute a character
+
+Add a unique entry to `characters` in `src/content/character.ts`. Supply its name, local `assets/...` path, display description and tagline, sprite cell dimensions, movement values, shield timing and autonomous controller profile. Set `bundled: true` only when the artwork may be redistributed in this public repository. Run `npm test` and `npm run build`; roster validation rejects duplicate IDs, unsafe paths, malformed profiles and invalid sprite dimensions.
+
+Current pets use the animated v2 sheet contract: 8 columns × 11 rows with 192×208-pixel cells. Place a distributable sheet in `public/assets/` and document its origin and permission in `public/assets/PROVENANCE.md`. Do not add remote runtime image URLs. A different superpower is a focused code contribution: it needs explicit gameplay rules, visible feedback and tests rather than descriptive configuration alone.
 
 ## Verification and scope
 
 See `docs/development-plan.md` for the current milestone, actual checks and remaining limitations. Browser evidence lives in `output/playwright/`. `window.__jumpa.snapshot()` and `.content()` return read-only copies for local inspection; they cannot move the character, skip hazards or change the run.
 
-This slice runs locally. Its source is shared through GitHub; Webflow Cloud configuration, deployment and hosted checks are deferred. The temporary Codex pet and captured screenshots remain local and are not distributed in the repository.
+This slice runs locally. Its source is shared through GitHub; Webflow Cloud configuration, deployment and hosted checks are deferred. Bill-e Bot is distributed with the repository; the temporary Codex pet and captured Codex screenshots remain local.
