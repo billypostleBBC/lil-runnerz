@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.DS_Store
+.playwright-cli/
+
+# Temporary third-party artwork and captures remain local pending rights review.
+public/assets/codex.webp
+output/playwright/*.png
+
+# Local credentials and environment overrides.
+.env
+.env.*
+!.env.example

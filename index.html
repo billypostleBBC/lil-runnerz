@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#141716" />
+    <title>Jumpa — Into the hollow</title>
+    <meta
+      name="description"
+      content="A small hero. Two connected rooms. Watch Codex find a way through, or take the controls."
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <a class="skip" href="#play">Skip to game</a>
+    <main>
+      <header class="masthead">
+        <a class="wordmark" href="./" aria-label="Jumpa home"
+          >JUMPA<span class="logo-dot">.</span></a
+        >
+        <div class="build">
+          <span class="live-dot"></span> LOCAL PLAYTEST
+          <span class="build-number">/ 001</span>
+        </div>
+      </header>
+      <section aria-labelledby="course-title" class="course-heading">
+        <div>
+          <p class="eyebrow">THE FIRST EXPEDITION</p>
+          <h1 id="course-title">Into the hollow<span>.</span></h1>
+        </div>
+        <p class="course-description">
+          One small hero. Two connected rooms.<br />See what makes it to the
+          other side.
+        </p>
+      </section>
+      <section class="cabinet" id="play" aria-label="Jumpa game">
+        <div class="run-bar">
+          <div class="room-label">
+            <span id="room-number">01</span
+            ><span id="room-title">THE EMBER VAULT</span>
+          </div>
+          <div class="run-meta">
+            <span id="mode-label">READY TO PLAY</span
+            ><span id="timer">00:00</span
+            ><button
+              id="pause"
+              class="icon-button"
+              aria-label="Pause game"
+              disabled
+            >
+              Ⅱ
+            </button>
+          </div>
+        </div>
+        <div class="viewport">
+          <div
+            id="game"
+            role="group"
+            aria-label="Side-on platform game"
+            aria-describedby="keyboard-help"
+          ></div>
+          <div class="vignette" aria-hidden="true"></div>
+          <div
+            id="screen"
+            class="screen"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="screen-title"
+            aria-describedby="screen-description"
+          >
+            <div class="screen-card">
+              <p id="screen-eyebrow" class="eyebrow">DUNGEON → CAVE</p>
+              <h2 id="screen-title">A little courage.<br />A long way down.</h2>
+              <p id="screen-description">
+                Jump the gaps. Watch the flames.<br />Keep your shield for the
+                tricky bits.
+              </p>
+              <fieldset id="mode-picker">
+                <legend>Choose how to play</legend>
+                <div class="mode-options">
+                  <label
+                    ><input
+                      type="radio"
+                      name="mode"
+                      value="auto"
+                      checked
+                    /><span
+                      ><b>WATCH CODEX</b
+                      ><small>It finds its own way</small></span
+                    ></label
+                  ><label
+                    ><input type="radio" name="mode" value="manual" /><span
+                      ><b>TAKE CONTROL</b
+                      ><small>You make the jumps</small></span
+                    ></label
+                  >
+                </div>
+              </fieldset>
+              <div class="screen-actions">
+                <button id="primary" class="primary" disabled>
+                  LOADING THE WORLD…</button
+                ><button id="secondary" class="secondary" hidden>
+                  Change mode
+                </button>
+              </div>
+              <p class="screen-note" id="screen-note">
+                One life · Two rooms · A shield up your sleeve
+              </p>
+            </div>
+          </div>
+          <div id="load-error" class="error-panel" role="alert" hidden>
+            <h2>Something stopped the adventure.</h2>
+            <p id="error-message"></p>
+            <button class="primary" id="reload">Reload game</button>
+          </div>
+        </div>
+        <div class="game-footer">
+          <div class="pilot">
+            <span class="pilot-dot"></span
+            ><span id="decision">Ready when you are</span>
+          </div>
+          <div class="shield-meter">
+            <span>SHIELD</span>
+            <div class="meter" aria-hidden="true"><i id="shield-fill"></i></div>
+            <span id="shield-status">READY</span>
+          </div>
+        </div>
+        <div class="route" aria-label="Course progress">
+          <span class="route-stop active" id="route-dungeon"
+            >01 <b>EMBER VAULT</b></span
+          >
+          <div
+            class="route-track"
+            role="progressbar"
+            aria-label="Course completed"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
+          >
+            <i id="route-fill"></i
+            ><span class="route-join" title="Room connection"></span>
+          </div>
+          <span class="route-stop" id="route-cave">02 <b>HOLLOW GROTTO</b></span
+          ><span class="finish-label">EXIT ↗</span>
+        </div>
+      </section>
+      <section class="field-notes" aria-label="Character and controls">
+        <div class="character-note">
+          <div class="pet-portrait" aria-hidden="true"></div>
+          <div>
+            <p class="eyebrow">YOUR SMALL HERO</p>
+            <h2>Codex <span>the cautiously curious</span></h2>
+            <p>A quick shield. A questionable sense of danger.</p>
+          </div>
+        </div>
+        <div class="control-note" id="keyboard-help">
+          <p class="eyebrow">WHEN YOU TAKE CONTROL</p>
+          <p>
+            <kbd>←</kbd><kbd>→</kbd> Move <kbd>SPACE</kbd> Jump
+            <kbd>X</kbd> Shield <kbd>ESC</kbd> Pause
+          </p>
+          <span
+            >Shield lasts 0.8s · Recharges in 4s · Pits are still pits.</span
+          >
+        </div>
+      </section>
+      <footer class="page-footer">
+        <span>BUILT FOR SMALL ADVENTURES.</span
+        ><span>Keyboard for manual play · No sound in this slice</span>
+      </footer>
+      <p class="sr-only" id="announcement" role="status" aria-live="polite"></p>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

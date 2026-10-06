@@ -1,0 +1,26 @@
+{
+  "name": "jumpa",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "vitest run",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "phaser": "3.90.0",
+    "@fontsource/press-start-2p": "5.2.7",
+    "@fontsource/ibm-plex-mono": "5.2.7"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "vite": "8.3.2",
+    "vitest": "5.0.3"
+  },
+  "engines": {
+    "node": ">=22.12"
+  }
+}
