@@ -1,8 +1,8 @@
-# Jumpa — two-room development plan
+# lil-runnerz — two-room development plan
 
 Date: 5 October 2026
 Status: Stage 1 and the second-character selection milestone are implemented and locally verified. Course expansion and deployment remain unstarted.
-Jumpa is a working project label, not a confirmed final game name.
+The confirmed game name is lil-runnerz (renamed on 6 October 2026).
 
 ## Intended result
 

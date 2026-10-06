@@ -175,6 +175,7 @@ h1 > span {
   border: 1px solid #0b100e;
 }
 #game {
+  position: relative;
   width: 100%;
   height: 100%;
 }
@@ -185,6 +186,11 @@ canvas {
   display: block !important;
   image-rendering: pixelated;
   outline-offset: -4px !important;
+}
+#game .character-artwork {
+  position: absolute;
+  pointer-events: none;
+  image-rendering: auto;
 }
 .vignette {
   position: absolute;
@@ -786,4 +792,77 @@ kbd {
   .vignette {
     box-shadow: none;
   }
+}
+
+.pet-portrait.marty {
+  background-image: url("/assets/marty.png");
+  background-size: 1344px 120px;
+  background-position: 0 0;
+  width: 96px;
+  height: 120px;
+  image-rendering: pixelated;
+}
+#character-picker { border: 0; padding: 0; margin: 0 0 12px; }
+#character-picker legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.screen-card { max-height: 100%; overflow-y: auto; }
+
+/* Menus share the game's pixel artwork and logical character capabilities. */
+[hidden] { display: none !important; }
+.screen.selecting { background: #141d1bf5; padding: 24px; backdrop-filter: none; }
+.selecting .screen-card { max-width: none; text-align: left; }
+.selecting .screen-card h2 { font-size: 19px; margin-bottom: 8px; }
+.selecting .screen-card > p:not(.eyebrow) { margin-bottom: 16px; }
+.selecting .screen-card .eyebrow { margin-bottom: 10px; }
+.selection-layout { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 3fr); }
+#character-picker { margin: 0; padding-right: 24px; }
+.character-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 12px; }
+.character-grid label { position: relative; cursor: pointer; }
+.character-grid input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.character-tile { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; min-height: 190px; border: 2px solid #465342; background: #202b25; padding: 16px 8px; position: relative; }
+.character-tile strong { font-size: 12px; }
+.character-tile small { color: #b4bfae; font-size: 10px; }
+.character-grid input:checked + .character-tile { border-color: var(--accent); background: #34432a; }
+.character-grid input:checked + .character-tile::after { content: "✓"; position: absolute; top: 7px; right: 10px; color: var(--accent); }
+.character-grid label:hover .character-tile { border-color: #d9e8c6; }
+.runner-sprite { display: block; flex: none; width: 96px; height: 104px; background: url('/assets/codex.webp') 0 0 / 768px 1144px; image-rendering: pixelated; }
+.runner-sprite.marty { width: 96px; height: 120px; background-image: url('/assets/marty.png'); background-size: 1344px 120px; }
+.character-detail { min-width: 0; padding-left: 20px; border-left: 1px solid #465342; }
+.preview-stage { height: 130px; display: grid; place-items: center; background: radial-gradient(ellipse at bottom, #405036, transparent 65%); }
+.preview-stage .runner-sprite { animation: runner-idle 1s steps(2, end) infinite; }
+@keyframes runner-idle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.character-detail h3 { font-family: var(--pixel); font-size: 12px; line-height: 1.6; margin: 12px 0; }
+.character-detail .eyebrow { font-size: 8px; line-height: 1.6; }
+.character-detail dl { display: grid; grid-template-columns: 1fr auto; gap: 7px; font-size: 10px; }
+.character-detail dt { color: #b4bfae; }
+.character-detail dd { margin: 0; }
+#preview-description { font-size: 9px; line-height: 1.7; color: #b4bfae; }
+.selection-help { font-size: 10px; line-height: 1.8; color: #b4bfae; margin: 16px 0; }
+.selection-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; padding-bottom: 6px; }
+.selection-actions .secondary { margin: 0; min-height: 45px; }
+.viewport:has(.screen.selecting) { min-height: 600px; }
+.screen:not(.selecting) #screen-title { color: var(--accent); }
+@media (max-width: 700px) {
+  .screen.selecting { padding: 16px; }
+  .viewport:has(.screen.selecting) { min-height: 790px; }
+  .selection-layout { grid-template-columns: 1fr; gap: 20px; }
+  #character-picker { padding: 0; }
+  .character-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .character-tile { min-height: 170px; gap: 7px; }
+  .character-detail { border-left: 0; border-top: 1px solid #465342; padding: 16px 0 0; display: grid; grid-template-columns: 110px 1fr; column-gap: 15px; }
+  .preview-stage { grid-row: span 4; align-self: center; }
+  .character-detail h3 { margin: 0 0 8px; }
+  .selection-actions { grid-template-columns: 1fr 1fr; }
+  .selection-actions .secondary { grid-column: 1 / -1; grid-row: 2; }
+}
+
+.runner-sprite.bill-e-bot { background-size: 800% 1100%; }
+.runner-sprite:not(.marty), .pet-portrait:not(.marty) { image-rendering: auto; }
+.character-grid input:disabled + .character-tile { opacity: .55; cursor: not-allowed; border-style: dashed; }
+/* Let selection content set its height so all actions remain visible. */
+.viewport:has(.screen.selecting:not([hidden])) { aspect-ratio: auto; height: auto; }
+.viewport:has(.screen.selecting:not([hidden])) #game { position: absolute; inset: 0; }
+.screen.selecting { position: relative; min-height: 600px; }
+.selecting .screen-card { overflow: visible; }
+@media (max-width: 700px) {
+  .screen.selecting { min-height: 790px; }
 }

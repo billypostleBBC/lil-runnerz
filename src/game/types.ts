@@ -33,6 +33,7 @@ export interface Course {
   hazards: Hazard[];
 }
 export interface Power {
+  kind: "shield" | "glide";
   durationMs: number;
   cooldownMs: number;
 }
@@ -59,6 +60,8 @@ export interface CharacterDefinition {
   tagline: string;
   frameWidth: number;
   frameHeight: number;
+  /** Preserve hard pixel edges only for artwork authored as pixel art. */
+  pixelArt?: boolean;
   bundled: boolean;
 }
 export interface Actions {
@@ -80,6 +83,7 @@ export interface Run {
 }
 export interface Snapshot {
   characterId: string;
+  powerActive: boolean;
   status: Status;
   mode: Mode;
   elapsed: number;

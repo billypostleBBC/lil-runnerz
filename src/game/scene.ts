@@ -1,11 +1,11 @@
 import Phaser from "phaser";
-import {
-  characters,
-  defaultCharacterId,
-} from "../content/character";
+import { characters, defaultCharacterId, getCharacter } from "../content/character";
 import { rooms } from "../content/rooms";
 import {
   activateShield,
+  activateGlide,
+  glideVelocity,
+  powerActive,
   advanceRun,
   assembleCourse,
   Controller,
@@ -17,27 +17,24 @@ import {
   validateCharacters,
 } from "./rules";
 import { paintBackground, paintHazards, paintTerrain } from "./art";
-import { resolveCharacterRuntime } from "./character-runtime";
 import { ManualInput } from "./input";
-import type {
-  Actions,
-  CharacterDefinition,
-  Mode,
-  Snapshot,
-  Status,
-} from "./types";
+import { CharacterArtwork } from "./character-artwork";
+import type { Actions, Character, CharacterDefinition, Mode, Snapshot, Status } from "./types";
 
 export class CourseScene extends Phaser.Scene {
+  private character: Character = getCharacter(defaultCharacterId).character;
+  private starting = false;
+  private gliding = false;
+  private glideLanded = false;
+  private hasGrounded = false;
   readonly course = assembleCourse(rooms);
   private player!: Phaser.Physics.Arcade.Sprite;
+  private characterArtwork!: CharacterArtwork;
   private backdrop!: Phaser.Textures.CanvasTexture;
   private hazardsArt!: Phaser.Textures.CanvasTexture;
   private shield!: Phaser.GameObjects.Graphics;
   private manual!: ManualInput;
-  private active: CharacterDefinition = resolveCharacterRuntime(
-    defaultCharacterId,
-  ).definition;
-  private controller = new Controller(this.active.controllerProfile);
+  private controller = new Controller(getCharacter(this.character.id).controllerProfile);
   private run = createRun("auto");
   private reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   private motionQuery = matchMedia("(prefers-reduced-motion: reduce)");
@@ -57,9 +54,9 @@ export class CourseScene extends Phaser.Scene {
     private onError: (message: string) => void,
   ) {
     super("course");
-    validateCharacters(characters);
   }
   create() {
+    validateCharacters(characters);
     this.backdrop = this.textures.createCanvas("backdrop", 640, 360)!;
     this.add
       .image(0, 0, "backdrop")
@@ -100,12 +97,18 @@ export class CourseScene extends Phaser.Scene {
     }
     this.player = this.physics.add
       .sprite(80, 313.25, "__WHITE", 0)
-      .setOrigin(0.5, 1)
       .setVisible(false)
+      // The display-resolution artwork layer draws this sprite; retain its body.
+      .setAlpha(0)
+      .setOrigin(0.5, 1)
+      .setScale(40 / 192)
       .setDepth(5);
     this.player.setCollideWorldBounds(true);
+    this.characterArtwork = new CharacterArtwork(this.game.canvas);
+    this.game.events.on(Phaser.Core.Events.POST_RENDER, this.drawCharacter, this);
     const body = this.player.body as Phaser.Physics.Arcade.Body;
-    body.setMaxVelocity(this.active.character.speed, 700);
+    body.setSize(86, 134).setOffset(53, 68);
+    body.updateFromGameObject();
     this.physics.add.collider(this.player, ground);
     for (const hazard of this.course.hazards) {
       const zone = this.add
@@ -116,16 +119,12 @@ export class CourseScene extends Phaser.Scene {
         if (
           this.run.status === "running" &&
           hazardActive(hazard, this.run.elapsed) &&
-          !shieldActive(
-            this.run.shieldAt,
-            this.run.elapsed,
-            this.active.character.power,
-          )
+          !shieldActive(this.run.shieldAt, this.run.elapsed, this.character.power)
         )
           this.end(
             "dead",
             hazard.kind === "flame"
-              ? "Caught by the flames. Time your shield or wait for the embers."
+              ? this.character.power.kind === "shield" ? "Caught by the flames. Time your shield or wait for the embers." : "Caught by the flames. Jump over them or wait for the embers; the board cannot protect you."
               : "Those spikes bite. Jump over them or take the upper route.",
           );
       });
@@ -146,6 +145,8 @@ export class CourseScene extends Phaser.Scene {
     document.addEventListener("visibilitychange", this.visibilityChanged);
     this.motionQuery.addEventListener("change", this.motionChanged);
     this.events.once("shutdown", () => {
+      this.game.events.off(Phaser.Core.Events.POST_RENDER, this.drawCharacter, this);
+      this.characterArtwork.destroy();
       this.manual.destroy();
       window.removeEventListener("blur", this.lostFocus);
       this.game.canvas.removeEventListener("blur", this.canvasLostFocus);
@@ -161,6 +162,13 @@ export class CourseScene extends Phaser.Scene {
     this.reduced = e.matches;
     this.publish();
   };
+  private drawCharacter() {
+    this.characterArtwork.draw(
+      this.player,
+      this.cameras.main,
+      getCharacter(this.character.id).pixelArt ?? false,
+    );
+  }
   private lostFocus = () =>
     this.pause("The game lost focus. Resume when you are ready.");
   private canvasLostFocus = () => {
@@ -169,44 +177,47 @@ export class CourseScene extends Phaser.Scene {
   private visibilityChanged = () => {
     if (document.hidden) this.lostFocus();
   };
-  async start(mode: Mode, characterId: string): Promise<void> {
-    if (!this.ready) return;
-    const runtime = resolveCharacterRuntime(characterId);
+  selectCharacter(id: string) {
+    if (this.run.status !== "ready") return;
+    this.character = getCharacter(id).character;
+    this.publish();
+  }
+  private configureCharacter() {
+    const marty = this.character.id === "marty";
+    this.player.setTexture(`pet:${this.character.id}`, 0).setScale(marty ? 0.5 : 40 / 192).setFlipX(false);
+    const body = this.player.body as Phaser.Physics.Arcade.Body;
+    body.setSize(marty ? 36 : 86, marty ? 56 : 134).setOffset(marty ? 14 : 53, marty ? 20 : 68);
+    body.updateFromGameObject();
+    body.setMaxVelocity(this.character.speed, 700);
+    this.physics.world.gravity.y = this.character.gravity;
+  }
+  async start(mode: Mode): Promise<void> {
+    if (!this.ready || this.starting) return;
+    this.starting = true;
     try {
-      await this.loadCharacterTexture(runtime.definition, runtime.textureKey);
+      const definition = getCharacter(this.character.id);
+      await this.loadCharacterTexture(definition, `pet:${this.character.id}`);
+      this.configureCharacter();
     } catch {
-      this.onError(
-        `${runtime.definition.character.name} artwork could not be loaded. Reload the page to try again.`,
-      );
+      this.onError(`${this.character.name} artwork could not be loaded. Reload the page to try again.`);
       return;
+    } finally {
+      this.starting = false;
     }
-    this.active = runtime.definition;
+    this.martyWasAirborne = false;
+    this.martyLandedAt = -Infinity;
     this.run = createRun(mode);
+    this.gliding = false;
+    this.glideLanded = false;
+    this.hasGrounded = false;
     this.run.status = "running";
     this.reason = "";
     this.decision =
       mode === "auto" ? "Finding a way through" : "You are in control";
-    this.controller = new Controller(this.active.controllerProfile);
+    this.controller = new Controller(getCharacter(this.character.id).controllerProfile);
     this.manual.clear();
-    this.player
-      .setTexture(runtime.textureKey, 0)
-      .setScale(40 / this.active.frameWidth)
-      .setPosition(80, 313.25)
-      .setVelocity(0, 0)
-      .setVisible(true);
-    const body = this.player.body as Phaser.Physics.Arcade.Body;
-    body
-      .setSize(
-        (86 / 192) * this.active.frameWidth,
-        (134 / 208) * this.active.frameHeight,
-      )
-      .setOffset(
-        (53 / 192) * this.active.frameWidth,
-        (68 / 208) * this.active.frameHeight,
-      );
-    body.setMaxVelocity(this.active.character.speed, 700);
-    body.setGravityY(this.active.character.gravity);
-    body.updateFromGameObject();
+    this.player.setPosition(80, 313.25).setVelocity(0, 0);
+    this.player.setVisible(true);
     this.facing = 1;
     this.lastProgressX = 80;
     this.lastProgressTime = 0;
@@ -271,6 +282,7 @@ export class CourseScene extends Phaser.Scene {
     this.manual.clear();
     this.physics.pause();
     this.run = createRun(this.run.mode);
+    this.gliding = false;
     this.reason = "";
     this.decision = "Ready when you are";
     this.player.setPosition(80, 313.25).setVelocity(0, 0);
@@ -296,7 +308,10 @@ export class CourseScene extends Phaser.Scene {
       const dt = Math.min(delta, 50);
       this.run = advanceRun(this.run, dt);
       const grounded = body.blocked.down || body.touching.down;
-      if (grounded) this.groundedAt = this.run.elapsed;
+      if (grounded) {
+        this.groundedAt = this.run.elapsed;
+        this.hasGrounded = true;
+      }
       const actor = {
         x: this.player.x,
         feet: body.bottom,
@@ -306,13 +321,24 @@ export class CourseScene extends Phaser.Scene {
       const actions: Actions =
         this.run.mode === "manual"
           ? this.manual.read()
-          : this.controller.decide(
+          : { ...this.controller.decide(
               this.run.elapsed,
               actor,
               this.course.solids,
               this.course.hazards,
-            );
-      const target = actions.move * this.active.character.speed;
+            ) };
+      if (this.run.mode === "auto" && this.character.power.kind === "glide") {
+        // Save the board for gaps, rather than spending it on every small step.
+        const landingBelow = this.course.solids.some(s =>
+          this.player.x >= s.x && this.player.x <= s.x + s.w && s.y >= body.bottom);
+        actions.power = !grounded && body.velocity.y >= -40 && !landingBelow;
+        // Marty jumps flames because his board offers no immunity.
+        if (grounded && this.course.hazards.some(h =>
+          h.kind === "flame" && hazardActive(h, this.run.elapsed) &&
+          h.x > this.player.x && h.x - this.player.x < 85 && h.y < body.bottom))
+          actions.jump = true;
+      }
+      const target = actions.move * this.character.speed;
       const rate = ((actions.move ? 1500 : 2100) * dt) / 1000;
       this.player.setVelocityX(
         Phaser.Math.Clamp(
@@ -327,24 +353,27 @@ export class CourseScene extends Phaser.Scene {
         this.jumpBufferedUntil > this.run.elapsed &&
         (grounded || this.run.elapsed - this.groundedAt < 75)
       ) {
-        this.player.setVelocityY(-this.active.character.jumpSpeed);
+        this.player.setVelocityY(-this.character.jumpSpeed);
         this.jumpBufferedUntil = 0;
         this.groundedAt = -1000;
       }
-      if (actions.power)
-        this.run.shieldAt = activateShield(
-          this.run.shieldAt,
-          this.run.elapsed,
-          this.active.character.power,
-        );
+      if (grounded) this.glideLanded = true;
+      if (actions.power) {
+        const at = this.character.power.kind === "glide"
+          ? activateGlide(this.run.shieldAt, this.run.elapsed, this.character.power, grounded || !this.hasGrounded)
+          : activateShield(this.run.shieldAt, this.run.elapsed, this.character.power);
+        if (at !== this.run.shieldAt) this.glideLanded = false;
+        this.run.shieldAt = at;
+      }
+      this.gliding = this.character.power.kind === "glide" && !grounded &&
+        !this.glideLanded && powerActive(this.run.shieldAt, this.run.elapsed, this.character.power);
+      if (this.gliding)
+        this.player.setVelocityY(glideVelocity(body.velocity.y, this.run.shieldAt,
+          this.run.elapsed, this.character.power, grounded));
       this.decision =
         this.run.mode === "manual"
-          ? "You are in control"
-          : shieldActive(
-                this.run.shieldAt,
-                this.run.elapsed,
-                this.active.character.power,
-              )
+          ? (this.gliding ? "Hoverboard glide" : "You are in control")
+          : this.gliding ? "Gliding on the hoverboard" : shieldActive(this.run.shieldAt, this.run.elapsed, this.character.power)
             ? "Shielding against danger"
             : !grounded
               ? body.velocity.y < 0
@@ -366,12 +395,11 @@ export class CourseScene extends Phaser.Scene {
       }
       if (
         this.run.mode === "auto" &&
-        this.run.elapsed - this.lastProgressTime >=
-          this.active.controllerProfile.stuckMs
+        this.run.elapsed - this.lastProgressTime >= getCharacter(this.character.id).controllerProfile.stuckMs
       )
         this.end(
           "stuck",
-          `${this.active.character.name} could not find a way forward. Retry, or try the route yourself.`,
+          `${this.character.name} could not find a way forward. Retry, or try the route yourself.`,
         );
       this.followCamera(dt);
     }
@@ -395,13 +423,7 @@ export class CourseScene extends Phaser.Scene {
     );
     this.hazardsArt.refresh();
     this.shield.clear();
-    if (
-      shieldActive(
-        this.run.shieldAt,
-        this.run.elapsed,
-        this.active.character.power,
-      )
-    ) {
+    if (shieldActive(this.run.shieldAt, this.run.elapsed, this.character.power)) {
       this.shield.lineStyle(2, 0xabe7c2, 1);
       this.shield.strokeRoundedRect(
         Math.round(this.player.x - 21),
@@ -424,8 +446,30 @@ export class CourseScene extends Phaser.Scene {
       this.lastPublish = _time;
     }
   }
+  private martyWasAirborne = false;
+  private martyLandedAt = -Infinity;
   private animatePet() {
     const body = this.player.body as Phaser.Physics.Arcade.Body;
+    if (this.character.id === "marty") {
+      const airborne = !body.blocked.down && !body.touching.down;
+      if (this.run.status === "running") {
+        if (this.martyWasAirborne && !airborne) this.martyLandedAt = this.run.elapsed;
+        this.martyWasAirborne = airborne;
+      }
+      let frame = 0;
+      if (this.run.status === "dead") frame = 6;
+      else if (this.run.status === "won") frame = 7;
+      else if (this.gliding) frame = 5;
+      else if (airborne && this.run.status !== "ready")
+        frame = body.velocity.y < -200 ? 4 : body.velocity.y < 70 ? 10 : 11;
+      else if (this.run.elapsed - this.martyLandedAt < 100) frame = 12;
+      else if (Math.abs(body.velocity.x) > 8)
+        frame = [1, 2, 3, 9][Math.floor(this.run.elapsed / 100) % 4];
+      else if (!this.reduced)
+        frame = [0, 8, 13, 8][Math.floor(this.run.elapsed / 220) % 4];
+      this.player.setFrame(frame).setFlipX(this.facing < 0);
+      return;
+    }
     let frame = 0;
     if (this.run.status === "dead") frame = 42;
     else if (this.run.status === "won")
@@ -465,7 +509,8 @@ export class CourseScene extends Phaser.Scene {
   snapshot(): Snapshot {
     const body = this.player?.body as Phaser.Physics.Arcade.Body | undefined;
     return {
-      characterId: this.active.character.id,
+      characterId: this.character.id,
+      powerActive: this.gliding || shieldActive(this.run.shieldAt, this.run.elapsed, this.character.power),
       status: this.run.status,
       mode: this.run.mode,
       elapsed: Math.round(this.run.elapsed),
@@ -488,12 +533,12 @@ export class CourseScene extends Phaser.Scene {
       shield: shieldActive(
         this.run.shieldAt,
         this.run.elapsed,
-        this.active.character.power,
+        this.character.power,
       ),
       cooldown: cooldownLeft(
         this.run.shieldAt,
         this.run.elapsed,
-        this.active.character.power,
+        this.character.power,
       ),
       decision: this.decision,
       reason: this.reason,

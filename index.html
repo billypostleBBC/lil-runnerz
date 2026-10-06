@@ -4,10 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#141716" />
-    <title>Jumpa — Into the hollow</title>
+    <title>lil-runnerz — Into the hollow</title>
     <meta
       name="description"
-      content="A small hero. Two connected rooms. Watch Codex find a way through, or take the controls."
+      content="A small hero. Two connected rooms. Watch your character find a way through, or take the controls."
     />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
@@ -15,8 +15,8 @@
     <a class="skip" href="#play">Skip to game</a>
     <main>
       <header class="masthead">
-        <a class="wordmark" href="./" aria-label="Jumpa home"
-          >JUMPA<span class="logo-dot">.</span></a
+        <a class="wordmark" href="./" aria-label="lil-runnerz home"
+          >lil-runnerz<span class="logo-dot">.</span></a
         >
         <div class="build">
           <span class="live-dot"></span> LOCAL PLAYTEST
@@ -33,7 +33,7 @@
           other side.
         </p>
       </section>
-      <section class="cabinet" id="play" aria-label="Jumpa game">
+      <section class="cabinet" id="play" aria-label="lil-runnerz game">
         <div class="run-bar">
           <div class="room-label">
             <span id="room-number">01</span
@@ -72,47 +72,38 @@
               <p id="screen-eyebrow" class="eyebrow">DUNGEON → CAVE</p>
               <h2 id="screen-title">A little courage.<br />A long way down.</h2>
               <p id="screen-description">
-                Jump the gaps. Watch the flames.<br />Keep your shield for the
-                tricky bits.
+                Jump the gaps. Watch the flames.<br />Give your superpower a spin.
               </p>
-              <fieldset id="character-picker">
-                <legend>Choose your character</legend>
-                <div
-                  class="character-options"
-                  id="character-options"
-                  aria-label="Choose your character"
-                ></div>
-              </fieldset>
-              <fieldset id="mode-picker">
-                <legend>Choose how to play</legend>
-                <div class="mode-options">
-                  <label
-                    ><input
-                      type="radio"
-                      name="mode"
-                      value="auto"
-                      checked
-                    /><span
-                      ><b id="watch-label">WATCH BILL-E BOT</b
-                      ><small>It finds its own way</small></span
-                    ></label
-                  ><label
-                    ><input type="radio" name="mode" value="manual" /><span
-                      ><b>TAKE CONTROL</b
-                      ><small>You make the jumps</small></span
-                    ></label
-                  >
+              <div id="selection" hidden>
+                <div class="selection-layout">
+                  <fieldset id="character-picker">
+                    <legend>Choose your character</legend>
+                    <div class="character-grid" id="character-grid"></div>
+                  </fieldset>
+                  <aside class="character-detail" aria-label="Selected character">
+                    <div class="preview-stage"><div id="character-preview" class="runner-sprite" aria-hidden="true"></div></div>
+                    <h3 id="preview-name"></h3>
+                    <p id="preview-power" class="eyebrow"></p>
+                    <dl id="preview-stats"></dl>
+                    <p id="preview-description"></p>
+                  </aside>
                 </div>
-              </fieldset>
-              <div class="screen-actions">
+                <p class="selection-help">Manual: ← → or A/D to move · Space to jump · X for power · Esc to pause</p>
+                <div class="selection-actions">
+                  <button id="back-menu" class="secondary">← Main menu</button>
+                  <button id="start-auto" class="primary" disabled>Auto-run →</button>
+                  <button id="start-manual" class="primary" disabled>Manual run →</button>
+                </div>
+              </div>
+              <div class="screen-actions" id="screen-actions">
                 <button id="primary" class="primary" disabled>
                   LOADING THE WORLD…</button
                 ><button id="secondary" class="secondary" hidden>
-                  Change character or mode
+                  Change character / mode
                 </button>
               </div>
               <p class="screen-note" id="screen-note">
-                One life · Two rooms · A shield up your sleeve
+                One life · Two rooms · One superpower
               </p>
             </div>
           </div>
@@ -128,7 +119,7 @@
             ><span id="decision">Ready when you are</span>
           </div>
           <div class="shield-meter">
-            <span>SHIELD</span>
+            <span id="power-label">HOVERBOARD</span>
             <div class="meter" aria-hidden="true"><i id="shield-fill"></i></div>
             <span id="shield-status">READY</span>
           </div>
@@ -157,23 +148,17 @@
           <div class="pet-portrait" aria-hidden="true"></div>
           <div>
             <p class="eyebrow">YOUR SMALL HERO</p>
-            <h2 id="character-heading">
-              Bill-e Bot
-              <span id="character-tagline">the cheerfully calculated</span>
-            </h2>
-            <p id="character-description">
-              A quick shield. A magnificent moustache.
-            </p>
+            <h2 id="character-name">Marty McFly</h2>
+            <p id="character-description">Red gilet. Pink board. A little more airtime.</p>
           </div>
         </div>
         <div class="control-note" id="keyboard-help">
           <p class="eyebrow">WHEN YOU TAKE CONTROL</p>
           <p>
             <kbd>←</kbd><kbd>→</kbd> Move <kbd>SPACE</kbd> Jump
-            <kbd>X</kbd> Shield <kbd>ESC</kbd> Pause
+            <kbd>X</kbd> <span id="power-control">Hoverboard</span> <kbd>ESC</kbd> Pause
           </p>
-          <span id="power-summary"
-            >Shield lasts 0.8s · Recharges in 4s · Pits are still pits.</span
+          <span id="power-description">Airborne X: glide for up to 1.2s · 4s recharge · No hazard protection.</span
           >
         </div>
       </section>

@@ -1,10 +1,10 @@
-# Jumpa — Into the hollow
+# lil-runnerz — Into the hollow
 
-A local two-room platformer slice with Bill-e Bot and an optional Codex pet, a dungeon leading continuously into a cave, and manual or autonomous play. No accounts, backend, live AI or hosted services are used.
+A local two-room platformer slice with Bill-e Bot, local Marty McFly work and an optional Codex pet, a dungeon leading continuously into a cave, and manual or autonomous play. No accounts, backend, live AI or hosted services are used.
 
 ## Run locally
 
-Repository: [billypostleBBC/lil-runnerz](https://github.com/billypostleBBC/lil-runnerz). Jumpa remains the working in-game name.
+Repository: [billypostleBBC/lil-runnerz](https://github.com/billypostleBBC/lil-runnerz). The game is named lil-runnerz.
 
 Bill-e Bot is bundled at `public/assets/bill-e-bot.png`, so a fresh clone is immediately playable. The temporary `public/assets/codex.webp` sprite remains excluded because redistribution rights are unresolved. When that authorised local file is absent, Codex stays visible in the picker as “Local artwork required” and Bill-e Bot remains playable. Screenshots containing the temporary Codex sprite also remain local.
 
@@ -27,7 +27,7 @@ npm run preview
 
 ## Play
 
-Choose Bill-e Bot or an available Codex, then choose **Watch [character]** or **Take control** before a run. Bill-e Bot is selected by default. Use left/right arrows or A/D to move, Space to jump, X to shield and Escape to pause. Manual play pauses when focus leaves the canvas. Both modes pause on a window blur or hidden-document event. Resume explicitly; held movement input is cleared. Menus support keyboard navigation and visible focus. Reduced motion removes decorative flame flicker, background drift and camera easing.
+Choose **Choose your character**, select a runner, then choose **Auto-run** or **Manual run**. Bill-e Bot is selected by default. Use left/right arrows or A/D to move, Space to jump, X for the selected power and Escape to pause. Marty uses an airborne hoverboard glide; see `docs/marty.md`. Manual play pauses when focus leaves the canvas. Both modes pause on a window blur or hidden-document event. Resume explicitly; held movement input is cleared. Menus support keyboard navigation and visible focus. Reduced motion removes decorative flame flicker, background drift and camera easing.
 
 One life; retry starts the whole course again. Shield protects against contact hazards for 0.8 seconds, with a 4-second cooldown from activation. It does not save you from a pit. Timers freeze while paused. Flames show an amber warning 0.4 seconds before reigniting. The run ends at the cave's lit doorway and chequered flag.
 
@@ -64,6 +64,8 @@ The course assembler adds horizontal offsets once. Both rooms are loaded into th
 To author another local room, copy a room definition, assign a unique ID, preserve the connection contract and add it to the room list. Update the themed art if a new theme is needed. Current scenery supports dungeon and cave only; this is not yet a generic room editor.
 
 ### Contribute a character
+
+Keep each contributor's original artwork and visual identity. Differences between character styles are intentional; characters do not need to match the rooms' pixel art. The game draws their source frames on a display-resolution layer over the low-resolution scenery, without changing their world size or collision bodies. Smooth resampling is the default for illustrated artwork; set `pixelArt: true` for intentionally pixel-authored sheets, as Marty does. Original asset files remain unchanged.
 
 Add a unique entry to `characters` in `src/content/character.ts`. Supply its name, local `assets/...` path, display description and tagline, sprite cell dimensions, movement values, shield timing and autonomous controller profile. Set `bundled: true` only when the artwork may be redistributed in this public repository. Run `npm test` and `npm run build`; roster validation rejects duplicate IDs, unsafe paths, malformed profiles and invalid sprite dimensions.
 

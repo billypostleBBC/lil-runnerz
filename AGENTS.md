@@ -1,6 +1,6 @@
 # Project brief: pixel-art challenge game with autonomous and manual play
 
-This file captures the agreed product intent and provides project-specific guidance for implementation. It is a handover from a design conversation, not evidence that a repository, game or deployment already exists. The game will be a web app hosted on Webflow Cloud. Its name, application framework and game engine are not yet confirmed.
+This file captures the agreed product intent and provides project-specific guidance for implementation. It is a handover from a design conversation, not evidence that a repository, game or deployment already exists. The game will be a web app hosted on Webflow Cloud. Its confirmed name is lil-runnerz. The original brief left the application framework and game engine open.
 
 ## Purpose
 
@@ -77,6 +77,8 @@ Keep behaviour understandable enough that players and spectators can connect a c
 
 ## Visual direction
 
+Updated character direction, 6 October 2026: preserve contributors' original character artwork rather than converting every character into pixel art. The mismatch between character styles is intentional and supports the user-generated character identity. Render detailed character artwork at display resolution so small in-game sizing does not unnecessarily discard its detail; preserve hard edges for artwork originally authored as pixel art. This overrides the common pixel-style requirements below for characters only. Scenery and interface retain the retro pixel-art direction.
+
 The agreed aesthetic is a cohesive retro arcade game, described by the creators as 8-bit. Treat this as a pixel-art direction rather than a requirement to emulate a historical console's technical limitations.
 
 - Flat, side-on 2D platforming with horizontal travel and vertical jumps.
@@ -124,7 +126,7 @@ When implementation is requested:
 
 The concept above is settled. These details remain open and must not be presented as previous agreements:
 
-- Game name, repository details, application framework and game engine. The web app target and Webflow Cloud hosting are confirmed.
+- Repository details, application framework and game engine. The web app target and Webflow Cloud hosting are confirmed.
 - Webflow Cloud project/site, deployment path and domain configuration.
 - Exact sprite dimensions, room dimensions, pixel scale, final palette and fonts.
 - Initial character roster, superpowers, stat meanings and activation rules in each mode.

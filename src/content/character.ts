@@ -1,4 +1,5 @@
 import type {
+  Character,
   CharacterDefinition,
   ControllerProfile,
 } from "../game/types";
@@ -17,8 +18,18 @@ const physicalProfile = {
   speed: 160,
   jumpSpeed: 410,
   gravity: 900,
-  power: { durationMs: 800, cooldownMs: 4000 },
+  power: { kind: "shield", durationMs: 800, cooldownMs: 4000 },
 } as const;
+
+export const marty: Character = {
+  id: "marty",
+  name: "Marty McFly",
+  asset: "assets/marty.png",
+  speed: 160,
+  jumpSpeed: 410,
+  gravity: 900,
+  power: { kind: "glide", durationMs: 1200, cooldownMs: 4000 },
+};
 
 export const characters: readonly CharacterDefinition[] = [
   {
@@ -48,6 +59,16 @@ export const characters: readonly CharacterDefinition[] = [
     frameWidth: 192,
     frameHeight: 208,
     bundled: false,
+  },
+  {
+    character: marty,
+    controllerProfile: { ...controllerProfile },
+    description: "Red gilet. Pink board. A little more airtime.",
+    tagline: "the hoverboard rider",
+    frameWidth: 64,
+    frameHeight: 80,
+    pixelArt: true,
+    bundled: true,
   },
 ];
 

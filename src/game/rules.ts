@@ -64,9 +64,10 @@ export function validateCharacter(c: Character): void {
   );
   assert(
     c.power &&
+      ["shield", "glide"].includes(c.power.kind) &&
       finite(c.power.durationMs, 100, 3000) &&
       finite(c.power.cooldownMs, c.power.durationMs, 30000),
-    "Shield duration and cooldown are invalid.",
+    "Power kind, duration or cooldown is invalid.",
   );
 }
 export function validateCharacters(
@@ -102,6 +103,10 @@ export function validateCharacters(
     assert(
       typeof definition.bundled === "boolean",
       `Character ${definition.character.id}: bundled status is required.`,
+    );
+    assert(
+      definition.pixelArt === undefined || typeof definition.pixelArt === "boolean",
+      `Character ${definition.character.id}: pixelArt must be a boolean when supplied.`,
     );
   }
 }
@@ -243,8 +248,14 @@ export const cooldownLeft = (at: number, now: number, p: Power) =>
   Math.max(0, p.cooldownMs - (now - at));
 export const activateShield = (at: number, now: number, p: Power) =>
   cooldownLeft(at, now, p) === 0 ? now : at;
-export const shieldActive = (at: number, now: number, p: Power) =>
+export const powerActive = (at: number, now: number, p: Power) =>
   now >= at && now - at < p.durationMs;
+export const shieldActive = (at: number, now: number, p: Power) =>
+  p.kind === "shield" && powerActive(at, now, p);
+export const activateGlide = (at: number, now: number, p: Power, grounded: boolean) =>
+  grounded ? at : activateShield(at, now, p);
+export const glideVelocity = (vy: number, at: number, now: number, p: Power, grounded: boolean) =>
+  p.kind === "glide" && !grounded && powerActive(at, now, p) ? Math.min(vy, 65) : vy;
 export function hazardActive(
   h: Pick<Hazard, "kind" | "period" | "on" | "phase">,
   now: number,
