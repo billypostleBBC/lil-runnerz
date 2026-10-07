@@ -1,0 +1,70 @@
+### Result
+{
+  "death": {
+    "characterId": "bill-e-bot",
+    "powerActive": false,
+    "status": "dead",
+    "mode": "manual",
+    "elapsed": 22706,
+    "x": 3704.6592916668064,
+    "feet": 596.8541666666667,
+    "vx": 0,
+    "vy": 0,
+    "grounded": false,
+    "room": 2,
+    "progress": 0.6913553190103957,
+    "shield": false,
+    "cooldown": 0,
+    "decision": "You are in control",
+    "reason": "Those spikes bite. Jump over them or take the upper route.",
+    "cameraX": 3345,
+    "cameraY": 326,
+    "reducedMotion": false
+  },
+  "restart": {
+    "characterId": "bill-e-bot",
+    "powerActive": false,
+    "status": "running",
+    "mode": "manual",
+    "elapsed": 0,
+    "x": 80,
+    "feet": 596.8541666666667,
+    "vx": 0,
+    "vy": 0,
+    "grounded": false,
+    "room": 0,
+    "progress": 0,
+    "shield": false,
+    "cooldown": 0,
+    "decision": "You are in control",
+    "reason": "",
+    "cameraX": 0,
+    "cameraY": 0,
+    "reducedMotion": false
+  },
+  "modeReset": {
+    "characterId": "bill-e-bot",
+    "powerActive": false,
+    "status": "running",
+    "mode": "auto",
+    "elapsed": 0,
+    "x": 80,
+    "feet": 312,
+    "vx": 0,
+    "vy": 0,
+    "grounded": false,
+    "room": 0,
+    "progress": 0,
+    "shield": false,
+    "cooldown": 0,
+    "decision": "Finding a way through",
+    "reason": "",
+    "cameraX": 0,
+    "cameraY": 0,
+    "reducedMotion": false
+  }
+}
+### Ran Playwright code
+```js
+await page.evaluate('() => (window.failureEvidence)');
+```

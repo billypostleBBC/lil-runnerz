@@ -1,3 +1,4 @@
+import { jungleRoom } from "./jungle";
 import type { Room } from "../game/types";
 
 // Geometry is local to each room. The assembler supplies horizontal offsets.
@@ -64,4 +65,5 @@ export const rooms: Room[] = [
       },
     ],
   },
+  jungleRoom,
 ];

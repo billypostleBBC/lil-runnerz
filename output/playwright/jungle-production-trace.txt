@@ -1,0 +1,50 @@
+### Result
+{
+  "isolation": {
+    "characterId": "bill-e-bot",
+    "powerActive": false,
+    "status": "running",
+    "mode": "auto",
+    "elapsed": 299,
+    "x": 117.91162499999989,
+    "feet": 312,
+    "vx": 160,
+    "vy": 0,
+    "grounded": true,
+    "room": 0,
+    "progress": 0.017590358072916652,
+    "shield": false,
+    "cooldown": 0,
+    "decision": "Watching the path ahead",
+    "reason": "",
+    "cameraX": 0,
+    "cameraY": 0,
+    "reducedMotion": false
+  },
+  "result": {
+    "characterId": "bill-e-bot",
+    "powerActive": false,
+    "status": "won",
+    "mode": "auto",
+    "elapsed": 33949,
+    "x": 3887.3287251595734,
+    "feet": 1120.9375,
+    "vx": 0,
+    "vy": 0,
+    "grounded": false,
+    "room": 2,
+    "progress": 1,
+    "shield": false,
+    "cooldown": 0,
+    "decision": "The waterfall pulls you down",
+    "reason": "Three rooms, one expedition. You dropped out of Jungle Run!",
+    "cameraX": 3345,
+    "cameraY": 760,
+    "reducedMotion": false
+  },
+  "errors": []
+}
+### Ran Playwright code
+```js
+await page.evaluate('() => (window.productionEvidence)');
+```

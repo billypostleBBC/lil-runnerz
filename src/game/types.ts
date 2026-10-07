@@ -8,27 +8,35 @@ export interface Rect {
   h: number;
 }
 export interface Hazard extends Rect {
-  kind: "flame" | "spikes";
+  kind: "flame" | "spikes" | "spider" | "snake";
   period?: number;
   on?: number;
   phase?: number;
 }
+export interface Port {
+  edge?: "left" | "right" | "top" | "bottom";
+  x?: number;
+  y: number;
+  clearance: number;
+}
+export interface Water extends Rect { kind: "waterfall" | "whirlpool" | "river" }
 export interface Room {
   id: string;
   name: string;
   subtitle: string;
-  theme: "dungeon" | "cave";
+  theme: "dungeon" | "cave" | "jungle";
   width: number;
   height: number;
-  entrance: { y: number; clearance: number };
-  exit: { y: number; clearance: number };
+  entrance: Port;
+  exit: Port;
+  water?: Water[];
   solids: Rect[];
   hazards: Hazard[];
 }
 export interface Course {
   width: number;
   height: number;
-  rooms: (Room & { offset: number })[];
+  rooms: (Room & { offset: number; offsetY: number })[];
   solids: Rect[];
   hazards: Hazard[];
 }

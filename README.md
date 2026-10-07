@@ -1,6 +1,6 @@
 # lil-runnerz — Into the hollow
 
-A local two-room platformer slice with Bill-e Bot, local Marty McFly work and an optional Codex pet, a dungeon leading continuously into a cave, and manual or autonomous play. No accounts, backend, live AI or hosted services are used.
+A local three-room platformer slice with Bill-e Bot, local Marty McFly work and an optional Codex pet, a dungeon leading continuously into a cave and a descending jungle, and manual or autonomous play. No accounts, backend, live AI or hosted services are used.
 
 ## Run locally
 
@@ -29,7 +29,7 @@ npm run preview
 
 Choose **Choose your character**, select a runner, then choose **Auto-run** or **Manual run**. Bill-e Bot is selected by default. Use left/right arrows or A/D to move, Space to jump, X for the selected power and Escape to pause. Marty uses an airborne hoverboard glide; see `docs/marty.md`. Manual play pauses when focus leaves the canvas. Both modes pause on a window blur or hidden-document event. Resume explicitly; held movement input is cleared. Menus support keyboard navigation and visible focus. Reduced motion removes decorative flame flicker, background drift and camera easing.
 
-One life; retry starts the whole course again. Shield protects against contact hazards for 0.8 seconds, with a 4-second cooldown from activation. It does not save you from a pit. Timers freeze while paused. Flames show an amber warning 0.4 seconds before reigniting. The run ends at the cave's lit doorway and chequered flag.
+One life; retry starts the whole course again. Shield protects against contact hazards for 0.8 seconds, with a 4-second cooldown from activation. It does not save you from a pit. Timers freeze while paused. Flames show an amber warning 0.4 seconds before reigniting. The run ends by crossing the marked bottom opening in Jungle Run. In the jungle, steer left after the first drop, wait for the spider, descend the waterfall, push right out of the whirlpool and time entry into the river past the snake. A jump at the final river lip reaches the optional bonus climb; collectibles are not implemented.
 
 ## Visual direction
 
@@ -47,9 +47,9 @@ Edit the relevant entry in `src/content/character.ts`. Changes are applied on re
 | `reactionMs`           |   120ms | How often decisions refresh. Longer intervals can miss take-off windows.                                                           |
 | `jumpLead`             |    22px | Distance ahead of the leading edge probed for safe footing or a step.                                                              |
 | `powerTriggerDistance` |    52px | Distance at which an active or warning flame prompts shield use. Must fit inside perception.                                       |
-| `stuckMs`              |  6000ms | Time without at least 6px of new forward progress before a clear stuck outcome.                                                    |
+| `stuckMs`              |  6000ms | Time without at least 6px of new route progress before a clear stuck outcome.                                                    |
 
-The controller reads nearby geometry and visible hazard timing, not the entire route or the camera view. It jumps spikes rather than wasting its shield on them. No randomness or learning is added. It can fail with a less capable profile or different challenge. A repeat attempt under identical conditions is expected to behave similarly.
+The original rooms use nearby geometry and visible hazard timing. Jungle Run adds an authored three-part route (right, left, right) and timed waits; it aims for the exit rather than the optional bonus climb. It jumps spikes rather than wasting its shield on them. No randomness or learning is added. It can fail with a less capable profile or different challenge. A repeat attempt under identical conditions is expected to behave similarly.
 
 The character's physical `speed` (160px/s), `jumpSpeed` (410px/s upwards) and `gravity` (900px/s²) affect both modes. Nominal jump height is about 93px; fixed-step integration yields a slightly lower actual apex. There is 75ms of coyote time and 100ms of jump buffering in both modes. A future character definition can provide its own controller profile without changing shared physics or power rules.
 
@@ -61,14 +61,14 @@ The character's physical `speed` (160px/s), `jumpSpeed` (410px/s upwards) and `g
 - `src/game/scene.ts`: shared Phaser movement/collision, simulation timing, input selection and camera.
 - `src/game/art.ts`: detailed pixel foregrounds and animated effects, clearly separated from collision data.
 - `public/assets/scenery/`: bundled 16-bit background panoramas; `docs/art/style-guide.md` is the art contract for future rooms.
-- `docs/rooms/`: authored creative briefs and a separate reference layout. No contributor source images were supplied for this slice.
+- `docs/rooms/`: authored creative briefs and a separate reference layout. Jungle Run includes Billy’s original sketch and reviewed design.
 - `public/assets/PROVENANCE.md`: character and scenery provenance; Fontsource packages contain font licences.
 
-A room uses top-left origin, X right, Y down, in logical pixels. Current rooms are 1440×432 with floor Y=312. Width may differ. Neighbouring rooms must share world height and exit/entrance floor height; no implicit vertical teleport or scaling is performed. Entrance and exit specify clear floor widths (96px in these examples, minimum 64px). Validation rejects missing support, obstructed portals, out-of-bounds geometry, duplicate IDs and malformed hazards.
+A room uses top-left origin, X right, Y down, in logical pixels. The original rooms are 1440×432 with floor Y=312; Jungle Run is 1120×1120 with a matching upper entrance. Left/right connections require matching floor height and clearance, but room heights may differ. Explicit `edge`, `x`, `y` and `clearance` fields support a bottom exit connecting to a top entrance. The assembler translates both axes and rejects overlapping placements, blocked openings, missing floor support, invalid water bounds and malformed hazards. Bottom/top assembly is covered by a receiving-room fixture in the tests; the shipped jungle is the last room.
 
-The course assembler adds horizontal offsets once. Both rooms are loaded into the same physics world. Crossing the seam does not recreate the character or reset velocity, shield state, timers or camera. Solid platforms use rectangular collision and are not one-way. Decorative pillars, crystals and rocks are not solid; continuous pale top edges identify platforms. The authored briefs are the reference for checking layout intent.
+All three rooms share one physics world. Crossing a seam preserves the character, velocity, power state and time. Solid platforms are rectangular, not one-way. Decorative scenery is not solid; pale top edges identify real platforms. `src/content/jungle.ts` owns the jungle layout and water regions; `src/game/jungle.ts` owns deterministic force, creature position and route rules. The divider reaches the ceiling and extends below the upper bonus ledges; its lower opening requires the river-edge jump. See [the room brief](docs/rooms/jungle-run.md) for exact implemented rules and verification.
 
-To author another local room, copy a room definition, assign a unique ID, preserve the connection contract and add it to the room list. Follow [the 16-bit art guide](docs/art/style-guide.md) and update the themed art if a new theme is needed. Current scenery supports dungeon and cave only; this is not yet a generic room editor.
+To author another local room, copy a room definition, assign a unique ID, preserve the connection contract and add it to the room list. Follow [the 16-bit art guide](docs/art/style-guide.md) and update the themed art if a new theme is needed. Current scenery supports dungeon, cave and jungle; this is not yet a generic room editor.
 
 ### Contribute a character
 

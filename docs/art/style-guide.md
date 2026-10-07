@@ -52,4 +52,10 @@ Assets live under `public/assets/scenery/`. Load them using Vite's base URL so a
 4. Inspect the actual game at desktop and narrow widths, both play modes, reduced motion, the room entrance/exit and the darkest/busiest scenes. Compare all silhouettes against the authored geometry.
 5. Check loading and failure states, test and build locally. Deployment remains a separate authorised action.
 
-The current implementation supports the dungeon and cave themes directly. Add another theme only when a real room requires it; this guide is not a requirement for a generic art pipeline or room editor.
+The current implementation supports dungeon, cave and jungle themes directly. Jungle Run uses a square background with dark petrol-green foliage and mossy rock; its water and creatures are drawn separately. See [its generation record](jungle-generation.md). Add another theme only when a real room requires it; this guide is not a requirement for a generic art pipeline or room editor.
+
+## Arcade shell — 6 October 2026
+
+The user-approved interface uses a fixed 3:2 screen, scaling to fit the window. Splash, runner selection, help, fullscreen settings, pause and results all live inside this screen. The original 640×360 playfield remains unchanged, with the remaining vertical space reserved for the top and bottom HUD. This preserves camera visibility and room geometry. On narrow screens, longer menus scroll inside the frame; manual play still requires a keyboard.
+
+The title screen reuses the Ember Vault scenery and warm cream/amber pixel lettering. The approved generated cabinet artwork (`public/assets/ui/arcade-cabinet.png`) appears when the window has sufficient width and height; it is hidden on smaller windows and in fullscreen. Cabinet controls are decorative and excluded from accessibility navigation. Actual menus use native HTML buttons and radio controls, with visible keyboard focus. The unchanged approved mock-up supplies only the decorative surround: the opaque live viewport covers its illustrated screen. All menus remain native interactive HTML. The surround is fitted vertically to preserve the exact 3:2 opening. Arrow keys navigate menu actions, left/right changes runners, and Enter on a runner moves to the run controls. The selected avatar bobs unless reduced motion is requested.

@@ -1,0 +1,33 @@
+### Result
+{
+  "error": "Room scenery could not be loaded. Check your connection and reload the page.",
+  "narrow": {
+    "overflow": false,
+    "reduced": true
+  },
+  "result": {
+    "characterId": "marty",
+    "powerActive": false,
+    "status": "dead",
+    "mode": "auto",
+    "elapsed": 15900,
+    "x": 2591.0000000000587,
+    "feet": 312,
+    "vx": 0,
+    "vy": 0,
+    "grounded": true,
+    "room": 1,
+    "progress": 0.40442708333334243,
+    "shield": false,
+    "cooldown": 0,
+    "decision": "Watching the path ahead",
+    "reason": "Caught by the flames. Jump over them or wait for the embers; the board cannot protect you.",
+    "cameraX": 2316,
+    "cameraY": 0,
+    "reducedMotion": true
+  }
+}
+### Ran Playwright code
+```js
+await page.evaluate('() => (window.uiEvidence)');
+```

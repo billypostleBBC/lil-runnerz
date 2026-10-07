@@ -128,3 +128,9 @@ Verification for this change:
 - Production preview at 375px and reduced motion checked separately; see the evidence record for the final outcome.
 
 Evidence: `output/playwright/16bit-*.png` (local screenshots) and `docs/art/verification.md`. This is a local implementation, not a Webflow Cloud deployment. Cross-browser/device performance, native OS focus switching and hosted mount-path checks remain outside this verification pass. Review the local production preview with `npm run preview` after building.
+
+## Jungle Run — 6 October 2026
+
+Billy approved the vertical jungle concept and the correction that walls off the bonus climb from the spike pit, then authorised implementation. The local course now contains three rooms. Jungle Run adds water forces, timed creatures, authored autonomous route guidance, a manually accessible bonus climb and a bottom exit; collectibles remain deferred. Existing dungeon/cave collision geometry is preserved. Bottom/top course assembly is covered by a receiving-room test fixture, with no fourth authored room yet.
+
+34 tests and the production build pass. Bill-e Bot completes autonomous play, and normal manual keyboard input reaches the bonus area and returns to the bottom finish. Pause/input reset, deliberate spike death, retry/mode reset, missing jungle artwork, narrow-screen layout and reduced motion were checked. Exact evidence and remaining limits are in `output/playwright/jungle-verification.md`. No deployment or publishing was performed.

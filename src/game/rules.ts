@@ -116,6 +116,7 @@ export function assembleCourse(rooms: Room[]): Course {
     "Course needs 1–20 rooms.",
   );
   let offset = 0;
+  let offsetY = 0;
   const ids = new Set<string>();
   const result: Course = {
     width: 0,
@@ -134,7 +135,7 @@ export function assembleCourse(rooms: Room[]): Course {
     assert(
       typeof room.name === "string" &&
         typeof room.subtitle === "string" &&
-        ["dungeon", "cave"].includes(room.theme),
+        ["dungeon", "cave", "jungle"].includes(room.theme),
       `Room ${room.id}: invalid name or theme.`,
     );
     assert(
@@ -147,7 +148,8 @@ export function assembleCourse(rooms: Room[]): Course {
         Array.isArray(room.hazards),
       `Room ${room.id}: missing solids or hazards.`,
     );
-    for (const rect of [...room.solids, ...room.hazards]) {
+    assert(room.water === undefined || Array.isArray(room.water), `Room ${room.id}: water must be an array.`);
+    for (const rect of [...room.solids, ...room.hazards, ...(room.water ?? [])]) {
       assert(
         rect &&
           finite(rect.x, 0, room.width) &&
@@ -161,32 +163,59 @@ export function assembleCourse(rooms: Room[]): Course {
     }
     for (const h of room.hazards) {
       assert(
-        ["flame", "spikes"].includes(h.kind),
+        ["flame", "spikes", "spider", "snake"].includes(h.kind),
         `Room ${room.id}: unknown hazard.`,
       );
-      if (h.kind === "flame")
+      if (h.kind !== "spikes")
         assert(
           finite(h.period, 500, 10000) &&
             finite(h.on, 100, h.period!) &&
             finite(h.phase, 0, h.period!),
-          `Room ${room.id}: invalid flame timing.`,
+          `Room ${room.id}: invalid hazard timing.`,
         );
     }
     assert(
       room.entrance && room.exit,
       `Room ${room.id}: missing entrance or exit connection.`,
     );
+    for (const water of room.water ?? []) {
+      assert(["waterfall", "whirlpool", "river"].includes(water.kind), `Room ${room.id}: invalid water region.`);
+    }
     const previous = result.rooms.at(-1);
-    assert(
-      !previous ||
-        (previous.exit.y === room.entrance.y &&
-          previous.height === room.height),
-      `Room connection to ${room.id} has incompatible floor or height.`,
-    );
+    if (previous) {
+      const out = previous.exit.edge ?? "right";
+      const incoming = room.entrance.edge ?? "left";
+      assert((out === "right" && incoming === "left") || (out === "bottom" && incoming === "top"),
+        `Room connection to ${room.id} has incompatible directions.`);
+      assert(previous.exit.clearance === room.entrance.clearance,
+        `Room connection to ${room.id} has incompatible clearance.`);
+      if (out === "right") {
+        assert(previous.exit.y === room.entrance.y, `Room connection to ${room.id} has incompatible floor.`);
+        offset = previous.offset + previous.width;
+        offsetY = previous.offsetY;
+      } else {
+        offset = previous.offset + previous.exit.x! - room.entrance.x!;
+        offsetY = previous.offsetY + previous.height;
+      }
+      assert(offset >= 0, `Room connection to ${room.id} extends outside the course.`);
+      assert(!result.rooms.some(r => offset < r.offset + r.width && offset + room.width > r.offset &&
+        offsetY < r.offsetY + r.height && offsetY + room.height > r.offsetY), `Room ${room.id}: overlapping room placement.`);
+    }
     for (const [edge, port] of [
       ["entrance", room.entrance],
       ["exit", room.exit],
     ] as const) {
+      const direction = port.edge ?? (edge === "entrance" ? "left" : "right");
+      assert((edge === "entrance" ? ["left", "top"] : ["right", "bottom"]).includes(direction), `Room ${room.id}: invalid ${edge} direction.`);
+      if (direction === "top" || direction === "bottom") {
+        assert(finite(port.x, 0, room.width) && finite(port.clearance, 64, room.width / 2) &&
+          port.x! + port.clearance <= room.width && port.y === (direction === "top" ? 0 : room.height),
+          `Room ${room.id}: invalid ${edge} opening.`);
+        const y = direction === "top" ? 0 : room.height - 64;
+        assert(![...room.solids, ...room.hazards].some(s => s.x < port.x! + port.clearance &&
+          s.x + s.w > port.x! && s.y < y + 64 && s.y + s.h > y), `Room ${room.id}: ${edge} clearance is obstructed.`);
+        continue;
+      }
       assert(
         port &&
           finite(port.y, 96, room.height - 16) &&
@@ -211,15 +240,15 @@ export function assembleCourse(rooms: Room[]): Course {
         `Room ${room.id}: ${edge} clearance is obstructed.`,
       );
     }
-    result.rooms.push({ ...room, offset });
-    result.solids.push(...room.solids.map((s) => ({ ...s, x: s.x + offset })));
+    result.rooms.push({ ...room, offset, offsetY });
+    result.solids.push(...room.solids.map((s) => ({ ...s, x: s.x + offset, y: s.y + offsetY })));
     result.hazards.push(
-      ...room.hazards.map((s) => ({ ...s, x: s.x + offset })),
+      ...room.hazards.map((s) => ({ ...s, x: s.x + offset, y: s.y + offsetY })),
     );
-    offset += room.width;
-    result.height = Math.max(result.height, room.height);
+    result.width = Math.max(result.width, offset + room.width);
+    result.height = Math.max(result.height, offsetY + room.height);
   }
-  result.width = offset;
+
   return result;
 }
 export const createRun = (mode: Mode): Run => ({
@@ -267,7 +296,7 @@ export function hazardWarning(
   now: number,
 ): boolean {
   return (
-    h.kind === "flame" &&
+    h.kind !== "spikes" &&
     !hazardActive(h, now) &&
     h.period! - ((now + (h.phase ?? 0)) % h.period!) <= 400
   );

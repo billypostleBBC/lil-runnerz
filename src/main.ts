@@ -3,7 +3,13 @@ import Phaser from "phaser";
 import "./style.css";
 import { CourseScene } from "./game/scene";
 import { rooms } from "./content/rooms";
-import { character, characters as definitions, controllerProfile, defaultCharacterId, getCharacter } from "./content/character";
+import {
+  character,
+  characters as definitions,
+  controllerProfile,
+  defaultCharacterId,
+  getCharacter,
+} from "./content/character";
 import {
   assembleCourse,
   validateCharacters,
@@ -22,37 +28,63 @@ let previousStatus: Status | undefined;
 let previousRoom = -1;
 let scene: CourseScene;
 let loaded = false;
-const characters = definitions.map(definition => definition.character);
+const characters = definitions.map((definition) => definition.character);
 let selected = getCharacter(defaultCharacterId).character;
 let sceneReady = false;
 let charactersReady = false;
-function characterNotes() {
-  el("character-name").textContent = selected.name;
-  const glide = selected.power.kind === "glide";
-  el("character-description").textContent = getCharacter(selected.id).description;
-  el("power-label").textContent = glide ? "HOVERBOARD" : "SHIELD";
-  el("power-control").textContent = glide ? "Hoverboard" : "Shield";
-  el("power-description").textContent = (glide ? "Airborne X: glide up to 1.2s · 4s recharge from activation · No hazard protection." : "Shield lasts 0.8s · 4s recharge from activation.") + " Speed: 160px/s · Jump: 93px.";
-  const portrait = document.querySelector<HTMLElement>(".pet-portrait")!;
-  portrait.classList.toggle("marty", glide);
-  portrait.style.backgroundImage = `url("${import.meta.env.BASE_URL}${selected.asset}")`;
-}
-characterNotes();
-let menuView: "splash" | "selection" = "splash";
+let menuView: "splash" | "selection" | "help" | "settings" = "splash";
 function showMenu(view: typeof menuView, focus = true) {
   menuView = view;
   const choosing = view === "selection";
-  screen.classList.toggle("selecting", choosing);
+  const splash = view === "splash";
+  screen.className = `screen ${view}`;
+  screen.removeAttribute("aria-describedby");
+  screen.scrollTop = 0;
   el("selection").hidden = !choosing;
-  el("screen-actions").hidden = choosing;
-  el("screen-note").hidden = true;
-  el("screen-eyebrow").textContent = choosing ? "CHOOSE YOUR RUNNER" : "SMALL HEROES. BIG TROUBLE.";
-  el("screen-title").textContent = choosing ? "Who's going in?" : "lil-runnerz";
-  el("screen-description").textContent = choosing ? "Pick a character. Choose how they run." : "Into the hollow · One life · Two rooms";
-  primary.textContent = loaded ? "CHOOSE YOUR CHARACTER →" : "LOADING THE WORLD…";
+  el("help-panel").hidden = view !== "help";
+  el("settings-panel").hidden = view !== "settings";
+  el("screen-actions").hidden = !splash;
+  el("splash-actions").hidden = !splash;
+  el("back-splash").hidden = splash || choosing;
+  el("screen-note").hidden = !splash;
+  el("screen-note").textContent = "↑ ↓ SELECT · ENTER TO CHOOSE";
+  el("screen-eyebrow").hidden = true;
+  el("screen-description").hidden = true;
+  el("screen-title").textContent = choosing
+    ? "CHOOSE YOUR RUNNER"
+    : view === "help"
+      ? "HOW TO PLAY"
+      : view === "settings"
+        ? "SETTINGS"
+        : "lil-runnerz";
+  primary.textContent = loaded ? "START GAME" : "LOADING…";
   secondary.hidden = true;
-  if (focus) (choosing ? document.querySelector<HTMLInputElement>("input[name=character]:checked") : primary)?.focus();
+  if (focus)
+    (choosing
+      ? document.querySelector<HTMLInputElement>(
+          "input[name=character]:checked",
+        )
+      : splash
+        ? primary
+        : el("back-splash")
+    )?.focus();
 }
+el("how-to-play").addEventListener("click", () => showMenu("help"));
+el("settings").addEventListener("click", () => showMenu("settings"));
+el("back-splash").addEventListener("click", () => showMenu("splash"));
+el("fullscreen").addEventListener("click", async () => {
+  try {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else await el("play").requestFullscreen();
+  } catch {
+    el("fullscreen").textContent = "Fullscreen unavailable in this browser";
+  }
+});
+document.addEventListener("fullscreenchange", () => {
+  el("fullscreen").textContent = document.fullscreenElement
+    ? "Leave fullscreen"
+    : "Enter fullscreen";
+});
 const grid = el("character-grid");
 for (const runner of characters) {
   const label = document.createElement("label");
@@ -77,23 +109,32 @@ for (const runner of characters) {
 }
 function previewCharacter() {
   el("character-preview").className = `runner-sprite ${selected.id}`;
-  el("character-preview").style.backgroundImage = `url("${import.meta.env.BASE_URL}${selected.asset}")`;
+  el("character-preview").style.backgroundImage =
+    `url("${import.meta.env.BASE_URL}${selected.asset}")`;
   el("preview-name").textContent = selected.name;
-  el("preview-power").textContent = selected.power.kind === "glide" ? "HOVERBOARD GLIDE" : "PROTECTIVE SHIELD";
+  el("preview-power").textContent =
+    selected.power.kind === "glide" ? "HOVERBOARD GLIDE" : "PROTECTIVE SHIELD";
   const stats = el("preview-stats");
   stats.replaceChildren();
   for (const [label, value] of [
     ["Speed", `${selected.speed} px/s`],
-    ["Jump height", `${Math.round(selected.jumpSpeed ** 2 / (2 * selected.gravity))} px`],
+    [
+      "Jump height",
+      `${Math.round(selected.jumpSpeed ** 2 / (2 * selected.gravity))} px`,
+    ],
     ["Power lasts", `${selected.power.durationMs / 1000}s`],
     ["Recharge", `${selected.power.cooldownMs / 1000}s`],
   ]) {
-    const dt = document.createElement("dt"), dd = document.createElement("dd");
-    dt.textContent = label; dd.textContent = value; stats.append(dt, dd);
+    const dt = document.createElement("dt"),
+      dd = document.createElement("dd");
+    dt.textContent = label;
+    dd.textContent = value;
+    stats.append(dt, dd);
   }
-  el("preview-description").textContent = selected.power.kind === "glide"
-    ? "Glide while airborne. No protection from hazards. Recharge starts on activation."
-    : "Brief protection from flames and spikes. Does not protect against falls. Recharge starts on activation.";
+  el("preview-description").textContent =
+    selected.power.kind === "glide"
+      ? "Glide while airborne. No protection from hazards. Recharge starts on activation."
+      : "Brief protection from flames, spikes and creatures. Does not stop currents or protect against falls. Recharge starts on activation.";
 }
 previewCharacter();
 function focusCanvas() {
@@ -120,6 +161,9 @@ function showError(message: string) {
 }
 function update(s: Snapshot) {
   current = s;
+  el("play").classList.toggle("playing", s.status === "running");
+  el("power-label").textContent =
+    selected.power.kind === "glide" ? "HOVERBOARD" : "SHIELD";
   const room = rooms[s.room];
   el("room-number").textContent = `0${s.room + 1}`;
   el("room-title").textContent = room.name.toUpperCase();
@@ -129,10 +173,6 @@ function update(s: Snapshot) {
       : s.mode === "auto"
         ? "AUTONOMOUS"
         : "MANUAL";
-  const seconds = Math.floor(s.elapsed / 1000);
-  el("timer").textContent =
-    `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
-  el("decision").textContent = s.decision;
   const shieldLabel = s.powerActive
     ? "ACTIVE"
     : s.cooldown > 0
@@ -141,12 +181,6 @@ function update(s: Snapshot) {
   el("shield-status").textContent = shieldLabel;
   el("shield-fill").style.width =
     `${s.powerActive ? 100 : (1 - s.cooldown / selected.power.cooldownMs) * 100}%`;
-  el("route-fill").style.width = `${s.progress * 100}%`;
-  document
-    .querySelector(".route-track")!
-    .setAttribute("aria-valuenow", String(Math.round(s.progress * 100)));
-  el("route-dungeon").classList.toggle("active", s.room === 0);
-  el("route-cave").classList.toggle("active", s.room === 1);
   pause.disabled = s.status !== "running";
   if (s.room !== previousRoom && s.status === "running") {
     announce(`Room ${s.room + 1}: ${room.name}`);
@@ -157,15 +191,25 @@ function update(s: Snapshot) {
   screen.hidden = s.status === "running";
   el("game").inert = s.status !== "running";
   if (s.status === "running") {
-    screen.classList.remove("selecting");
+    screen.className = "screen";
     return;
   }
   el("screen-description").textContent = s.reason;
   if (s.status === "ready") {
     showMenu(menuView, false);
   } else {
-    screen.classList.remove("selecting");
+    screen.className = "screen";
     el("selection").hidden = true;
+    for (const id of [
+      "help-panel",
+      "settings-panel",
+      "splash-actions",
+      "back-splash",
+    ])
+      el(id).hidden = true;
+    el("screen-description").hidden = false;
+    screen.setAttribute("aria-describedby", "screen-description");
+    screen.scrollTop = 0;
     el("screen-actions").hidden = false;
     el("screen-note").hidden = true;
     secondary.hidden = false;
@@ -188,9 +232,15 @@ let startingRun = false;
 async function startRun(mode: "auto" | "manual") {
   if (!loaded || startingRun) return;
   startingRun = true;
-  const controls = [...screen.querySelectorAll<HTMLInputElement | HTMLButtonElement>("input, button")];
-  const disabledStates = controls.map(control => control.disabled);
-  controls.forEach(control => { control.disabled = true; });
+  const controls = [
+    ...screen.querySelectorAll<HTMLInputElement | HTMLButtonElement>(
+      "input, button",
+    ),
+  ];
+  const disabledStates = controls.map((control) => control.disabled);
+  controls.forEach((control) => {
+    control.disabled = true;
+  });
   screen.setAttribute("aria-busy", "true");
   try {
     if (current?.status === "ready") scene.selectCharacter(selected.id);
@@ -199,16 +249,24 @@ async function startRun(mode: "auto" | "manual") {
   } catch {
     showError("The run could not start. Reload the game to try again.");
   } finally {
-    controls.forEach((control, index) => { control.disabled = disabledStates[index]; });
+    controls.forEach((control, index) => {
+      control.disabled = disabledStates[index];
+    });
     screen.removeAttribute("aria-busy");
     startingRun = false;
   }
 }
 primary.addEventListener("click", () => {
   if (!loaded) return;
-  if (current?.status === "ready") { showMenu("selection"); return; }
+  if (current?.status === "ready") {
+    showMenu("selection");
+    return;
+  }
   if (current?.status === "paused") scene.resume();
-  else { void startRun(current?.mode ?? "auto"); return; }
+  else {
+    void startRun(current?.mode ?? "auto");
+    return;
+  }
   focusCanvas();
 });
 secondary.addEventListener("click", () => {
@@ -225,22 +283,55 @@ for (const mode of ["auto", "manual"] as const) {
 }
 pause.addEventListener("click", () => scene.pause());
 el("reload").addEventListener("click", () => location.reload());
-document.querySelectorAll<HTMLInputElement>("input[name=character]").forEach(input =>
-  input.addEventListener("change", () => {
-    selected = characters.find(c => c.id === input.value)!;
+document
+  .querySelectorAll<HTMLInputElement>("input[name=character]")
+  .forEach((input) =>
+    input.addEventListener("change", () => {
+      selected = characters.find((c) => c.id === input.value)!;
 
-    characterNotes();
-    previewCharacter();
-    announce(`${selected.name} selected`);
-  }),
-);
+      previewCharacter();
+      announce(`${selected.name} selected`);
+    }),
+  );
 screen.addEventListener("keydown", (event) => {
-  if (event.key !== "Tab") return;
+  if (
+    event.key === "Escape" &&
+    current?.status === "ready" &&
+    menuView !== "splash"
+  ) {
+    event.preventDefault();
+    showMenu("splash");
+    return;
+  }
+  const active = document.activeElement;
+  const radio =
+    active instanceof HTMLInputElement && active.name === "character";
+  if (radio && (event.key === "ArrowLeft" || event.key === "ArrowRight"))
+    return;
+  if (radio && event.key === "Enter") {
+    event.preventDefault();
+    el("start-auto").focus();
+    return;
+  }
+  const arrow = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(
+    event.key,
+  );
+  if (event.key !== "Tab" && !arrow) return;
   const focusable = [
     ...screen.querySelectorAll<HTMLElement>(
       "button:not([hidden]):not(:disabled),input:checked:not(:disabled)",
     ),
   ].filter((e) => !e.closest("[hidden]"));
+  if (arrow) {
+    event.preventDefault();
+    const direction =
+      event.key === "ArrowUp" || event.key === "ArrowLeft" ? -1 : 1;
+    const index = focusable.indexOf(active as HTMLElement);
+    focusable[
+      (index + direction + focusable.length) % focusable.length
+    ]?.focus();
+    return;
+  }
   const first = focusable[0],
     last = focusable.at(-1);
   if (event.shiftKey && document.activeElement === first) {
@@ -258,15 +349,24 @@ function enableWhenReady() {
   el<HTMLButtonElement>("start-auto").disabled = !loaded;
   el<HTMLButtonElement>("start-manual").disabled = !loaded;
   showMenu(menuView, false);
+  if (loaded && document.activeElement === document.body)
+    primary.focus({ preventScroll: true });
 }
 async function checkOptions() {
-  const checks = await Promise.all(definitions.map(async definition => ({
-    id: definition.character.id, availability: await checkCharacterAvailability(definition),
-  })));
+  const checks = await Promise.all(
+    definitions.map(async (definition) => ({
+      id: definition.character.id,
+      availability: await checkCharacterAvailability(definition),
+    })),
+  );
   for (const { id, availability } of checks) {
-    const input = [...document.querySelectorAll<HTMLInputElement>("input[name=character]")].find(input => input.value === id)!;
+    const input = [
+      ...document.querySelectorAll<HTMLInputElement>("input[name=character]"),
+    ].find((input) => input.value === id)!;
     input.disabled = !availability.available;
-    if (availability.reason) input.parentElement!.querySelector("small")!.textContent = availability.reason;
+    if (availability.reason)
+      input.parentElement!.querySelector("small")!.textContent =
+        availability.reason;
   }
   charactersReady = true;
   enableWhenReady();
@@ -311,11 +411,20 @@ try {
   const observer = new ResizeObserver(() => game.scale.refresh());
   observer.observe(el("game"));
   // Read-only diagnostics for reproducible local verification; no gameplay overrides.
-  void checkOptions().catch(error => showError(`${error instanceof Error ? error.message : "Character artwork could not be checked."} Reload to try again.`));
+  void checkOptions().catch((error) =>
+    showError(
+      `${error instanceof Error ? error.message : "Character artwork could not be checked."} Reload to try again.`,
+    ),
+  );
   Object.defineProperty(window, "__jumpa", {
     value: Object.freeze({
       snapshot: () => scene.snapshot(),
-      content: () => structuredClone({ rooms, characters: definitions, selectedCharacterId: selected.id }),
+      content: () =>
+        structuredClone({
+          rooms,
+          characters: definitions,
+          selectedCharacterId: selected.id,
+        }),
     }),
     writable: false,
   });

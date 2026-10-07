@@ -1,7 +1,9 @@
+import { jungleBackground, jungleDetails, jungleWater } from "./jungle-art";
+import { creatureRect } from "./jungle";
 import type { Course } from "./types";
 import { hazardWarning } from "./rules";
 
-export type Scenery = Record<"dungeon" | "cave", HTMLImageElement>;
+export type Scenery = Record<"dungeon" | "cave" | "jungle", HTMLImageElement>;
 
 const stone = ["#283440", "#303d49", "#35424e", "#25323e"];
 const rock = ["#203b40", "#29464b", "#304d51", "#243f45"];
@@ -123,11 +125,17 @@ export function paintBackground(
   for (const room of course.rooms) {
     const left = Math.max(0, room.offset - scrollX);
     const right = Math.min(width, room.offset + room.width - scrollX);
-    if (right <= left) continue;
+    const top = Math.max(0, room.offsetY - scrollY);
+    const bottom = Math.min(height, room.offsetY + room.height - scrollY);
+    if (right <= left || bottom <= top) continue;
     c.save();
     c.beginPath();
-    c.rect(left, 0, right - left, height);
+    c.rect(left, top, right - left, bottom - top);
     c.clip();
+    if (room.theme === "jungle") {
+      jungleBackground(c, scrollX - room.offset, scrollY - room.offsetY, reduced, scenery.jungle);
+      c.restore(); continue;
+    }
     const cave = room.theme === "cave";
     const localScroll = scrollX - room.offset;
     const drift = Math.round(localScroll * (reduced ? 1 : 0.35));
@@ -179,9 +187,10 @@ export function paintBackground(
 
 export function paintTerrain(c: CanvasRenderingContext2D, course: Course) {
   for (const room of course.rooms) {
+    c.save(); c.translate(0, room.offsetY);
     for (const s of room.solids) {
       const x = s.x + room.offset,
-        cave = room.theme === "cave",
+        cave = room.theme !== "dungeon",
         palette = cave ? rock : stone;
       c.save();
       c.beginPath();
@@ -205,7 +214,9 @@ export function paintTerrain(c: CanvasRenderingContext2D, course: Course) {
       }
       c.restore();
     }
-    if (room.theme === "dungeon") {
+    if (room.theme === "jungle") {
+      c.save(); c.translate(room.offset, 0); jungleDetails(c, room); c.restore();
+    } else if (room.theme === "dungeon") {
       // A broken stone threshold makes the change of theme part of the world.
       const x = room.offset + room.width - 32;
       rect(c, x, 128, 16, 184, "#35333b");
@@ -218,7 +229,9 @@ export function paintTerrain(c: CanvasRenderingContext2D, course: Course) {
       for (let x = room.offset + 50; x < room.offset + room.width; x += 247)
         crystals(c, x, 312, 18);
     }
+    c.restore();
   }
+  if (course.rooms.at(-1)?.exit.edge === "bottom") return;
   // Finish beacon: colour, flag and open doorway all identify the finish.
   const x = course.width - 96;
   rect(c, x - 17, 242, 34, 70, "#b8bb91");
@@ -247,7 +260,40 @@ export function paintHazards(
   active: (h: Course["hazards"][number]) => boolean,
 ) {
   c.clearRect(0, 0, course.width, course.height);
+  for (const room of course.rooms) if (room.theme === "jungle") {
+    c.save(); c.translate(room.offset, room.offsetY); jungleWater(c, room, elapsed, reduced); c.restore();
+  }
   for (const h of course.hazards) {
+    if (h.kind === "spider" || h.kind === "snake") {
+      const b = creatureRect(h, elapsed);
+      const colour = active(h) ? "#dc8061" : hazardWarning(h, elapsed) ? "#ffd17c" : "#749d62";
+      if (h.kind === "spider") {
+        rect(c, h.x + h.w/2, h.y - 164, 1, b.y - h.y + 164, "#afbba0");
+        for (let i=0;i<4;i++) {
+          rect(c,b.x-6,b.y+3+i*7,8,2,colour); rect(c,b.x+b.w-2,b.y+3+i*7,8,2,colour);
+        }
+        poly(c, [[b.x+6,b.y],[b.x+b.w-6,b.y],[b.x+b.w,b.y+7],[b.x+b.w,b.y+b.h-6],[b.x+b.w-6,b.y+b.h],[b.x+6,b.y+b.h],[b.x,b.y+b.h-6],[b.x,b.y+7]], "#352e36");
+        rect(c,b.x+3,b.y+7,b.w-6,b.h-13,colour);
+        rect(c,b.x+7,b.y+2,b.w-14,7,colour);
+        rect(c,b.x+7,b.y+b.h-7,b.w-14,5,colour);
+        rect(c,b.x+5,b.y+7,3,13,"#97ac75");
+        rect(c,b.x+b.w-8,b.y+12,4,11,"#5c5a42");
+        rect(c,b.x+10,b.y+20,3,4,"#384437"); rect(c,b.x+17,b.y+20,3,4,"#384437");
+        rect(c,b.x+6,b.y+8,4,4,"#fff0bc"); rect(c,b.x+20,b.y+8,4,4,"#fff0bc");
+      } else {
+        // Stepped coils and an extended head keep the tree hazard recognisably a snake.
+        rect(c,b.x+10,b.y+7,10,b.h-12,colour);
+        rect(c,b.x+12,b.y+b.h-11,b.w-12,11,colour);
+        rect(c,b.x+b.w-10,b.y+18,10,Math.max(8,b.h-20),colour);
+        rect(c,b.x+15,b.y+15,Math.max(3,b.w-15),10,colour);
+        for (let y=b.y+12; y<b.y+b.h-8;y+=6) rect(c,b.x+11,y,5,2,"#354b33");
+        rect(c,b.x+16,b.y+b.h-5,Math.max(1,b.w-20),3,"#b5bc77");
+        rect(c,b.x,b.y,18,12,colour); rect(c,b.x+3,b.y+3,3,3,"#fff0bc");
+        if(active(h)) rect(c,b.x-5,b.y+8,6,2,"#eaa088");
+      }
+      if (hazardWarning(h,elapsed)) { c.font='14px monospace';c.fillStyle='#ffe2a1';c.fillText('!', b.x+8,b.y-8); }
+      continue;
+    }
     if (h.kind === "spikes") {
       rect(c, h.x - 2, h.y + h.h - 4, h.w + 4, 4, "#794f48");
       for (let x = h.x; x < h.x + h.w; x += 8) {

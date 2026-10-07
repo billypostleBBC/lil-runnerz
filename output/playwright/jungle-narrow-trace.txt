@@ -1,0 +1,26 @@
+### Result
+{
+  "characterId": "bill-e-bot",
+  "powerActive": false,
+  "status": "won",
+  "mode": "auto",
+  "elapsed": 33947,
+  "x": 3887.2374837033876,
+  "feet": 1120.9375,
+  "vx": 0,
+  "vy": 0,
+  "grounded": false,
+  "room": 2,
+  "progress": 1,
+  "shield": false,
+  "cooldown": 0,
+  "decision": "The waterfall pulls you down",
+  "reason": "Three rooms, one expedition. You dropped out of Jungle Run!",
+  "cameraX": 3360,
+  "cameraY": 760,
+  "reducedMotion": true
+}
+### Ran Playwright code
+```js
+await page.evaluate('() => (window.narrowResult)');
+```

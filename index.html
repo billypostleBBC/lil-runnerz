@@ -14,45 +14,25 @@
   <body>
     <a class="skip" href="#play">Skip to game</a>
     <main>
-      <header class="masthead">
-        <a class="wordmark" href="./" aria-label="lil-runnerz home"
-          >lil-runnerz<span class="logo-dot">.</span></a
-        >
-        <div class="build">
-          <span class="live-dot"></span> LOCAL PLAYTEST
-          <span class="build-number">/ 001</span>
-        </div>
-      </header>
-      <section aria-labelledby="course-title" class="course-heading">
-        <div>
-          <p class="eyebrow">THE FIRST EXPEDITION</p>
-          <h1 id="course-title">Into the hollow<span>.</span></h1>
-        </div>
-        <p class="course-description">
-          One small hero. Two connected rooms.<br />See what makes it to the
-          other side.
-        </p>
-      </section>
       <section class="cabinet" id="play" aria-label="lil-runnerz game">
-        <div class="run-bar">
-          <div class="room-label">
-            <span id="room-number">01</span
-            ><span id="room-title">THE EMBER VAULT</span>
-          </div>
-          <div class="run-meta">
-            <span id="mode-label">READY TO PLAY</span
-            ><span id="timer">00:00</span
-            ><button
-              id="pause"
-              class="icon-button"
-              aria-label="Pause game"
-              disabled
-            >
-              Ⅱ
-            </button>
-          </div>
-        </div>
         <div class="viewport">
+          <div class="game-hud game-hud-top">
+            <div class="room-label">
+              <span id="room-number">01</span
+              ><span id="room-title">THE EMBER VAULT</span>
+            </div>
+            <div class="run-meta">
+              <span id="mode-label">READY TO PLAY</span
+              ><button
+                id="pause"
+                class="icon-button"
+                aria-label="Pause game"
+                disabled
+              >
+                Ⅱ
+              </button>
+            </div>
+          </div>
           <div
             id="game"
             role="group"
@@ -72,7 +52,8 @@
               <p id="screen-eyebrow" class="eyebrow">DUNGEON → CAVE</p>
               <h2 id="screen-title">A little courage.<br />A long way down.</h2>
               <p id="screen-description">
-                Jump the gaps. Watch the flames.<br />Give your superpower a spin.
+                Jump the gaps. Watch the flames.<br />Give your superpower a
+                spin.
               </p>
               <div id="selection" hidden>
                 <div class="selection-layout">
@@ -80,20 +61,64 @@
                     <legend>Choose your character</legend>
                     <div class="character-grid" id="character-grid"></div>
                   </fieldset>
-                  <aside class="character-detail" aria-label="Selected character">
-                    <div class="preview-stage"><div id="character-preview" class="runner-sprite" aria-hidden="true"></div></div>
+                  <aside
+                    class="character-detail"
+                    aria-label="Selected character"
+                  >
+                    <div class="preview-stage">
+                      <div
+                        id="character-preview"
+                        class="runner-sprite"
+                        aria-hidden="true"
+                      ></div>
+                    </div>
                     <h3 id="preview-name"></h3>
                     <p id="preview-power" class="eyebrow"></p>
                     <dl id="preview-stats"></dl>
                     <p id="preview-description"></p>
                   </aside>
                 </div>
-                <p class="selection-help">Manual: ← → or A/D to move · Space to jump · X for power · Esc to pause</p>
+                <p class="selection-help">
+                  Manual: ← → or A/D to move · Space to jump · X for power · Esc
+                  to pause
+                </p>
                 <div class="selection-actions">
                   <button id="back-menu" class="secondary">← Main menu</button>
-                  <button id="start-auto" class="primary" disabled>Auto-run →</button>
-                  <button id="start-manual" class="primary" disabled>Manual run →</button>
+                  <button id="start-auto" class="primary" disabled>
+                    Auto-run →
+                  </button>
+                  <button id="start-manual" class="primary" disabled>
+                    Manual run →
+                  </button>
                 </div>
+              </div>
+              <div id="help-panel" hidden>
+                <p>Reach the exit. Mind the gaps and hazards.</p>
+                <p>
+                  Manual: ← → or A/D to move · Space to jump · X for power · Esc
+                  to pause.
+                </p>
+                <p>Auto-run: watch your runner make its own decisions.</p>
+                <p>
+                  Jungle Run: steer left on the first drop. Waterfalls pull you
+                  down; push right out of the whirlpool. Time a jump at the
+                  river’s final ledge for the optional bonus climb, or follow
+                  the water to the bottom exit.
+                </p>
+                <p>
+                  Choose a runner to see its power and limits. Manual play needs
+                  a keyboard.
+                </p>
+              </div>
+              <div id="settings-panel" hidden>
+                <button id="fullscreen" class="secondary">
+                  Enter fullscreen
+                </button>
+                <p>
+                  Decorative motion follows your device’s reduced-motion
+                  setting.
+                </p>
+                <p>This game currently has no sound.</p>
               </div>
               <div class="screen-actions" id="screen-actions">
                 <button id="primary" class="primary" disabled>
@@ -102,8 +127,13 @@
                   Change character / mode
                 </button>
               </div>
+              <nav id="splash-actions" aria-label="Main menu">
+                <button id="how-to-play">HOW TO PLAY</button
+                ><button id="settings">SETTINGS</button>
+              </nav>
+              <button id="back-splash" class="secondary" hidden>← Back</button>
               <p class="screen-note" id="screen-note">
-                One life · Two rooms · One superpower
+                One life · Three rooms · One superpower
               </p>
             </div>
           </div>
@@ -112,60 +142,21 @@
             <p id="error-message"></p>
             <button class="primary" id="reload">Reload game</button>
           </div>
-        </div>
-        <div class="game-footer">
-          <div class="pilot">
-            <span class="pilot-dot"></span
-            ><span id="decision">Ready when you are</span>
+          <div class="game-hud game-hud-bottom">
+            <div class="shield-meter">
+              <span id="power-label">HOVERBOARD</span>
+              <div class="meter" aria-hidden="true">
+                <i id="shield-fill"></i>
+              </div>
+              <span id="shield-status">READY</span>
+            </div>
           </div>
-          <div class="shield-meter">
-            <span id="power-label">HOVERBOARD</span>
-            <div class="meter" aria-hidden="true"><i id="shield-fill"></i></div>
-            <span id="shield-status">READY</span>
-          </div>
-        </div>
-        <div class="route" aria-label="Course progress">
-          <span class="route-stop active" id="route-dungeon"
-            >01 <b>EMBER VAULT</b></span
-          >
-          <div
-            class="route-track"
-            role="progressbar"
-            aria-label="Course completed"
-            aria-valuemin="0"
-            aria-valuemax="100"
-            aria-valuenow="0"
-          >
-            <i id="route-fill"></i
-            ><span class="route-join" title="Room connection"></span>
-          </div>
-          <span class="route-stop" id="route-cave">02 <b>HOLLOW GROTTO</b></span
-          ><span class="finish-label">EXIT ↗</span>
         </div>
       </section>
-      <section class="field-notes" aria-label="Character and controls">
-        <div class="character-note">
-          <div class="pet-portrait" aria-hidden="true"></div>
-          <div>
-            <p class="eyebrow">YOUR SMALL HERO</p>
-            <h2 id="character-name">Marty McFly</h2>
-            <p id="character-description">Red gilet. Pink board. A little more airtime.</p>
-          </div>
-        </div>
-        <div class="control-note" id="keyboard-help">
-          <p class="eyebrow">WHEN YOU TAKE CONTROL</p>
-          <p>
-            <kbd>←</kbd><kbd>→</kbd> Move <kbd>SPACE</kbd> Jump
-            <kbd>X</kbd> <span id="power-control">Hoverboard</span> <kbd>ESC</kbd> Pause
-          </p>
-          <span id="power-description">Airborne X: glide for up to 1.2s · 4s recharge · No hazard protection.</span
-          >
-        </div>
-      </section>
-      <footer class="page-footer">
-        <span>BUILT FOR SMALL ADVENTURES.</span
-        ><span>Keyboard for manual play · No sound in this slice</span>
-      </footer>
+      <p id="keyboard-help" class="sr-only">
+        Arrow keys or A/D to move, Space to jump, X for power, Escape to pause.
+        Manual play requires a keyboard.
+      </p>
       <p class="sr-only" id="announcement" role="status" aria-live="polite"></p>
     </main>
     <script type="module" src="/src/main.ts"></script>

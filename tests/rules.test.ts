@@ -89,7 +89,7 @@ describe("contribution boundaries", () => {
   it("assembles room-local geometry without mutating definitions", () => {
     const before = JSON.stringify(rooms);
     const course = assembleCourse(rooms);
-    expect(course.width).toBe(2880);
+    expect(course.width).toBe(4000);
     expect(course.rooms[1].offset).toBe(1440);
     expect(course.solids.some((s) => s.x === 1440)).toBe(true);
     expect(JSON.stringify(rooms)).toBe(before);

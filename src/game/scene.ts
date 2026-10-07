@@ -1,3 +1,4 @@
+import { creatureRect, crossedExit, jungleActions, jungleStage, overlaps, waterVelocity } from "./jungle";
 import Phaser from "phaser";
 import { characters, defaultCharacterId, getCharacter } from "../content/character";
 import { rooms } from "../content/rooms";
@@ -41,13 +42,17 @@ export class CourseScene extends Phaser.Scene {
   private motionQuery = matchMedia("(prefers-reduced-motion: reduce)");
   private reason = "";
   private decision = "Ready when you are";
-  private lastProgressX = 80;
   private lastProgressTime = 0;
   private lastPublish = 0;
   private jumpBufferedUntil = 0;
   private groundedAt = -1000;
-  private finishX = this.course.width - 96;
   private facing = 1;
+  private routeStage = 0;
+  private nextJungleDecision = 0;
+  private jungleDecision: Actions = { move: 0, jump: false, power: false };
+  private walkVelocity = 0;
+  private previousPosition = { x: 80, feet: 312 };
+  private bestRouteProgress = 0;
   private ready = false;
   constructor(
     private onSnapshot: (s: Snapshot) => void,
@@ -58,14 +63,16 @@ export class CourseScene extends Phaser.Scene {
   }
   preload() {
     this.load.image("scenery:dungeon", `${import.meta.env.BASE_URL}assets/scenery/ember-vault.png`, { responseType: "blob", timeout: 15000 });
+    this.load.image("scenery:jungle", `${import.meta.env.BASE_URL}assets/scenery/jungle-run.png`, { responseType: "blob", timeout: 15000 });
     this.load.image("scenery:cave", `${import.meta.env.BASE_URL}assets/scenery/hollow-grotto.png`, { responseType: "blob", timeout: 15000 });
   }
   create() {
-    if (!this.textures.exists("scenery:dungeon") || !this.textures.exists("scenery:cave")) {
+    if (!this.textures.exists("scenery:dungeon") || !this.textures.exists("scenery:cave") || !this.textures.exists("scenery:jungle")) {
       this.onError("Room scenery could not be loaded. Check your connection and reload the page.");
       return;
     }
     this.scenery = {
+      jungle: this.textures.get("scenery:jungle").getSourceImage() as HTMLImageElement,
       dungeon: this.textures.get("scenery:dungeon").getSourceImage() as HTMLImageElement,
       cave: this.textures.get("scenery:cave").getSourceImage() as HTMLImageElement,
     };
@@ -124,6 +131,7 @@ export class CourseScene extends Phaser.Scene {
     body.updateFromGameObject();
     this.physics.add.collider(this.player, ground);
     for (const hazard of this.course.hazards) {
+      if (hazard.kind === "spider" || hazard.kind === "snake") continue;
       const zone = this.add
         .zone(hazard.x, hazard.y, hazard.w, hazard.h)
         .setOrigin(0);
@@ -138,7 +146,9 @@ export class CourseScene extends Phaser.Scene {
             "dead",
             hazard.kind === "flame"
               ? this.character.power.kind === "shield" ? "Caught by the flames. Time your shield or wait for the embers." : "Caught by the flames. Jump over them or wait for the embers; the board cannot protect you."
-              : "Those spikes bite. Jump over them or take the upper route.",
+              : this.course.rooms.some(room => room.theme === "jungle" && hazard.x >= room.offset && hazard.x < room.offset + room.width)
+                ? "You overshot the landing. Steer left as you drop from the first ledge."
+                : "Those spikes bite. Jump over them or take the upper route.",
           );
       });
     }
@@ -201,7 +211,7 @@ export class CourseScene extends Phaser.Scene {
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     body.setSize(marty ? 36 : 86, marty ? 56 : 134).setOffset(marty ? 14 : 53, marty ? 20 : 68);
     body.updateFromGameObject();
-    body.setMaxVelocity(this.character.speed, 700);
+    body.setMaxVelocity(this.character.speed + 110, 700);
     this.physics.world.gravity.y = this.character.gravity;
   }
   async start(mode: Mode): Promise<void> {
@@ -230,9 +240,14 @@ export class CourseScene extends Phaser.Scene {
     this.controller = new Controller(getCharacter(this.character.id).controllerProfile);
     this.manual.clear();
     this.player.setPosition(80, 313.25).setVelocity(0, 0);
+    (this.player.body as Phaser.Physics.Arcade.Body).updateFromGameObject();
     this.player.setVisible(true);
     this.facing = 1;
-    this.lastProgressX = 80;
+    this.routeStage = 0;
+    this.nextJungleDecision = 0;
+    this.walkVelocity = 0;
+    this.previousPosition = { x: 80, feet: 312 };
+    this.bestRouteProgress = 0;
     this.lastProgressTime = 0;
     this.jumpBufferedUntil = 0;
     this.groundedAt = -1000;
@@ -284,6 +299,7 @@ export class CourseScene extends Phaser.Scene {
     if (this.run.status !== "paused") return;
     this.manual.clear();
     this.player.setVelocityX(0);
+    this.walkVelocity = 0;
     this.jumpBufferedUntil = 0;
     this.run.status = transition(this.run.status, "resume");
     this.reason = "";
@@ -295,10 +311,13 @@ export class CourseScene extends Phaser.Scene {
     this.manual.clear();
     this.physics.pause();
     this.run = createRun(this.run.mode);
+    this.bestRouteProgress = 0;
+    this.walkVelocity = 0;
     this.gliding = false;
     this.reason = "";
     this.decision = "Ready when you are";
     this.player.setPosition(80, 313.25).setVelocity(0, 0);
+    (this.player.body as Phaser.Physics.Arcade.Body).updateFromGameObject();
     this.cameras.main.setScroll(0, 0);
     this.publish();
   }
@@ -331,9 +350,20 @@ export class CourseScene extends Phaser.Scene {
         halfWidth: body.halfWidth,
         grounded,
       };
+      const room = this.course.rooms.find(r => this.player.x >= r.offset && this.player.x < r.offset + r.width &&
+        body.bottom >= r.offsetY && body.bottom <= r.offsetY + r.height + 100) ?? this.course.rooms[0];
+      const inJungle = room.theme === "jungle";
+      const localActor = { ...actor, x: actor.x - room.offset, feet: actor.feet - room.offsetY };
+      if (inJungle) this.routeStage = jungleStage(this.routeStage, localActor.feet);
+      if (inJungle && this.run.mode === "auto" && this.run.elapsed >= this.nextJungleDecision) {
+        const profile = getCharacter(this.character.id).controllerProfile;
+        this.jungleDecision = jungleActions(localActor, this.routeStage, this.run.elapsed, room.hazards, profile.perceptionDistance);
+        this.nextJungleDecision = this.run.elapsed + profile.reactionMs;
+      }
       const actions: Actions =
         this.run.mode === "manual"
           ? this.manual.read()
+          : inJungle ? { ...this.jungleDecision }
           : { ...this.controller.decide(
               this.run.elapsed,
               actor,
@@ -353,13 +383,8 @@ export class CourseScene extends Phaser.Scene {
       }
       const target = actions.move * this.character.speed;
       const rate = ((actions.move ? 1500 : 2100) * dt) / 1000;
-      this.player.setVelocityX(
-        Phaser.Math.Clamp(
-          target,
-          body.velocity.x - rate,
-          body.velocity.x + rate,
-        ),
-      );
+      this.walkVelocity = Phaser.Math.Clamp(target, this.walkVelocity - rate, this.walkVelocity + rate);
+      this.player.setVelocityX(this.walkVelocity);
       if (actions.move) this.facing = actions.move;
       if (actions.jump) this.jumpBufferedUntil = this.run.elapsed + 100;
       if (
@@ -395,15 +420,38 @@ export class CourseScene extends Phaser.Scene {
               : body.blocked.right || Math.abs(body.velocity.x) < 8
                 ? "Looking for a route"
                 : "Watching the path ahead";
-      if (body.bottom > this.course.height + 40)
-        this.end(
-          "dead",
-          "A long way down. Jump closer to the edge on your next attempt.",
-        );
-      else if (this.player.x >= this.finishX && body.bottom <= 320)
-        this.end("won", "Two rooms, one continuous run. You made it out.");
-      if (this.player.x > this.lastProgressX + 6) {
-        this.lastProgressX = this.player.x;
+      const bodyRect = { x: body.x, y: body.y, w: body.width, h: body.height };
+      for (const h of this.course.hazards) {
+        if ((h.kind === "spider" || h.kind === "snake") && hazardActive(h, this.run.elapsed) &&
+          overlaps(bodyRect, creatureRect(h, this.run.elapsed)) &&
+          !shieldActive(this.run.shieldAt, this.run.elapsed, this.character.power))
+          this.end("dead", h.kind === "spider" ? "The spider caught you. Wait for it to climb, then pass underneath." :
+            "The snake struck. Wait on the dry bank, then ride the current during its recovery.");
+      }
+      if (inJungle && this.run.status === "running") {
+        for (const water of room.water ?? []) {
+          if (!overlaps(bodyRect, { ...water, x: water.x + room.offset, y: water.y + room.offsetY })) continue;
+          const velocity = waterVelocity(water.kind, body.velocity.x, body.velocity.y,
+            localActor.x - (water.x + water.w / 2), this.character.speed);
+          this.player.setVelocity(velocity.vx, velocity.vy);
+          if (water.kind === "waterfall") this.gliding = false;
+          this.decision = water.kind === "waterfall" ? "The waterfall pulls you down" :
+            water.kind === "whirlpool" ? "Push right to escape the whirlpool" : "Riding the current — jump at the lip for the bonus climb";
+        }
+        if (this.run.mode === "auto" && actions.move === 0) this.decision = "Waiting for a safe crossing";
+        if (localActor.x > 924 && localActor.feet < 530) this.decision = "Bonus area reached — collectibles coming later";
+      }
+      const final = this.course.rooms.at(-1)!;
+      const exit = { ...final.exit, x: final.offset + (final.exit.x ?? final.width - 96), y: final.offsetY + final.exit.y };
+      if (crossedExit(exit, this.previousPosition, { x: this.player.x, feet: body.bottom }))
+        this.end("won", "Three rooms, one expedition. You dropped out of Jungle Run!");
+      else if (body.bottom > room.offsetY + room.height + 40)
+        this.end("dead", "A long way down. Aim for a landing or the marked exit on your next attempt.");
+      this.previousPosition = { x: this.player.x, feet: body.bottom };
+      const routeProgress = inJungle ? room.offset + this.routeStage * 1200 +
+        (this.routeStage === 1 ? room.width - localActor.x : localActor.x) : this.player.x;
+      if (routeProgress > this.bestRouteProgress + 6) {
+        this.bestRouteProgress = routeProgress;
         this.lastProgressTime = this.run.elapsed;
       }
       if (
@@ -498,24 +546,31 @@ export class CourseScene extends Phaser.Scene {
   }
   private followCamera(dt: number) {
     const cam = this.cameras.main;
+    const room = this.course.rooms.find(r => this.player.x >= r.offset && this.player.x < r.offset + r.width);
+    const deepJungle = room?.theme === "jungle" && this.player.y > room.offsetY + 420;
     const targetX = Phaser.Math.Clamp(
       this.player.x - 300 + this.facing * 28,
-      0,
+      deepJungle ? room.offset : 0,
       this.course.width - 640,
     );
     const amount = this.reduced ? 1 : 1 - Math.exp(-dt / 125);
     cam.scrollX += (targetX - cam.scrollX) * amount;
     // Vertical dead zone avoids camera bobbing on ordinary jumps.
     const screenY = this.player.y - cam.scrollY;
-    if (screenY < 100)
+    const lowerEdge = room?.theme === "jungle" ? 260 : 328;
+    // Reveal the landing and spike tips before committing to the first long drop.
+    const approachingDrop = room?.theme === "jungle" && this.player.x - room.offset > 600 &&
+      this.player.x - room.offset < 760 && this.player.y - room.offsetY < 420;
+    if (approachingDrop) cam.scrollY += (room.offsetY + 264 - cam.scrollY) * amount;
+    else if (screenY < 100)
       cam.scrollY = Phaser.Math.Clamp(
         this.player.y - 100,
         0,
         this.course.height - 360,
       );
-    else if (screenY > 328)
+    else if (screenY > lowerEdge)
       cam.scrollY = Phaser.Math.Clamp(
-        this.player.y - 328,
+        this.player.y - lowerEdge,
         0,
         this.course.height - 360,
       );
@@ -536,11 +591,12 @@ export class CourseScene extends Phaser.Scene {
       room: Math.max(
         0,
         this.course.rooms.findIndex(
-          (room) => (this.player?.x ?? 80) < room.offset + room.width,
+          (room) => (this.player?.x ?? 80) >= room.offset && (this.player?.x ?? 80) < room.offset + room.width &&
+            (body?.bottom ?? 312) >= room.offsetY && (body?.bottom ?? 312) <= room.offsetY + room.height + 100,
         ),
       ),
       progress: Phaser.Math.Clamp(
-        ((this.player?.x ?? 80) - 80) / (this.finishX - 80),
+        this.run.status === "won" ? 1 : this.bestRouteProgress / (this.course.width + 2400),
         0,
         1,
       ),
