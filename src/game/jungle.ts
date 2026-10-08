@@ -40,7 +40,9 @@ export function jungleActions(actor: Actor, stage: number, now: number, hazards:
   }
   const snake = hazards.find(h => h.kind === 'snake')!;
   const wait = actor.x > 520 && actor.x < 552 && snake.x - actor.x <= perception && !safeToCross(snake, now, 1500);
-  return { move: wait ? 0 : 1, jump: actor.grounded && actor.x > 320 && actor.x < 356, power: false };
+  // The river now reaches the pool: neutral input drifts towards the snake.
+  // Use ordinary left input to hold back until its recovery window opens.
+  return { move: wait ? -1 : 1, jump: actor.grounded && actor.x > 320 && actor.x < 356, power: false };
 }
 export function jungleStage(stage: number, feet: number) {
   if (feet > 740) return Math.max(stage, 2);

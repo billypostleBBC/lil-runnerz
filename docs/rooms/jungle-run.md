@@ -17,7 +17,7 @@ Source: [original sketch](sources/jungle-run.HEIC). Review diagram: [jungle-run-
 3. **Spider crossing:** travel left under the arrival shelf. The spider swings through this route on a visible thread. Include a dry waiting position outside its sweep. Contact with the spider's body causes damage; the thread is decorative.
 4. **Waterfall:** the left end feeds into a downward chute. Once inside, the flow wins over jumping and gliding. Keep lateral steering so the player can aim for the pool's exit. No new swimming controls.
 5. **Whirlpool:** land in a shallow basin. Its inward pull slows escape but remains weaker than sustained movement towards the right lip. It must not become an inescapable holding state. The water itself is not lethal in this proposal; no oxygen meter or drowning mechanic.
-6. **River and snake:** the outflow accelerates movement to the right towards the tree. Show the snake's wind-up before its lunge. Give a dry rock before the main current so the player can choose when to enter; a recovery gap after the lunge must permit passage. Shield protection does not cancel current forces.
+6. **River and snake:** the outflow accelerates movement to the right towards the tree. Show the snake's wind-up before its lunge. Keep a stepping stone near the pool and allow counter-steering before the snake so the player can time their approach; a recovery gap after the lunge must permit passage. Shield protection does not cancel current forces.
 7. **Optional climb — timed river-edge entry:** a continuous solid wall separates the spike pit and upper route from the bonus area and its climbing ledges. Extend it to the room ceiling so it cannot be jumped or glided over. Its only access is below the wall, from the final river ledge after the snake. Time a jump as the current carries the character off that ledge to reach the first bonus platform across the spillway; simply drifting off must carry the character down towards the normal exit instead. Use the existing brief coyote-time allowance at the edge, not a new mid-air jump. Tune the first landing height, gap and current together so the jump timing matters. Climb successive ledges inside the separated area and return down those ledges to the spillway. Label the destination “BONUS AREA — COMING LATER”. No points or collectibles yet.
 8. **Bottom exit:** the river spills into a clearly framed downward opening. Crossing that opening completes this room; falling elsewhere remains a fall, not an exit. A future room can receive the character through a matching top entrance.
 
@@ -55,7 +55,7 @@ The third room follows the cave at world X=2880. Local size is 1120×1120, entra
 - Spider: 4-second cycle, active for 1.2 seconds, retracts during recovery, and descends as a 400ms warning. Its active body swings 42 pixels either side of its anchor; drawing and collision share the same position function.
 - Waterfall: X=156–240, Y=546–890. Minimum downward speed 300px/s, capped by the shared 700px/s terminal speed. It overrides jumping/gliding while preserving horizontal steering.
 - Whirlpool: X=120–350, Y=876–920. Pull towards the centre, up to 90px/s; baseline 160px/s movement can overcome it. No water damage or drowning.
-- Dry bank before the river allows waiting. River: X=560–900, Y=888–920, adds 110px/s rightward drift. Full right movement reaches 270px/s; full left movement still makes 50px/s against the current.
+- River: X=350–900, Y=888–920, directly adjoining the whirlpool and adding 110px/s rightward drift. The existing pool-exit rock remains; counter-steer to hold back before the snake. Full right movement reaches 270px/s; full left movement still makes 50px/s against the current.
 - Snake: 4.4-second cycle, active for 1.1 seconds with a 400ms warning. Lunges left from the tree; body collision shares its animated position. Shield prevents creature damage, while glide does not.
 - Divider: X=900–924, from ceiling to Y=832. First bonus landing: X=1000–1104 at Y=852. A falling character cannot pass under the divider and land on that platform; a timed river-edge jump can. Six further rises of 60px lead to Y=492. All are solid platforms, so take off clear of the next platform's underside. Return down the alternating ledges to the final spillway.
 - Existing jump/coyote/buffer rules remain unchanged. Autonomous play follows the main route, using character reaction/perception settings and visible hazard phases; the optional climb is for manual exploration in this slice.
@@ -64,3 +64,15 @@ The third room follows the cave at world X=2880. Local size is 1120×1120, entra
 Background: `public/assets/scenery/jungle-run.png`, generated with the built-in tool using the existing scenery as style references. [Prompt and origin](../art/jungle-generation.md). Water, solids, creatures and bonus labels remain separate code-drawn elements. Runtime geometry in `src/content/jungle.ts` is authoritative; the SVG remains a conceptual route study.
 
 Verification evidence and exact remaining limits: `output/playwright/jungle-verification.md`. Deployment is not part of this local implementation.
+
+### Basin boundary — 8 October 2026
+
+The basin floor now extends from X=0 to X=900 at Y=920, with solid ground down to the room bottom. A solid cliff occupies X=0–100 from Y=360 to the bottom, below the arrival shelf. Mossy rock and vines mark the blocking face. This closes the left side of the waterfall/whirlpool basin while preserving the upper entrance, main descent, river-edge jump and bottom exit. Water force regions are unchanged.
+
+### Connected water and concealed edges — 8 October 2026
+
+River rendering and force geometry now start at the whirlpool outflow (X=350); the former 210px gap is removed. Autonomous waiting uses left input to resist the current before the snake. Water banks render in front of the water: overlapping mossy stone and creepers cover waterfall sides and the basin rim, with an uneven pool surface leading into the river. These small decorative overlaps do not add collision walls inside the water.
+
+### Left ledge continuity — 8 October 2026
+
+Added a solid bank at X=100–156, Y=560–608, joining the left cliff to the waterfall lip at the same height as the spider shelf. The chute at X=156–240 remains open. The basin floor still spans X=0–900; cliff art now stops at Y=920 so its continuous top remains visible through the join. Jungle solids now use mud, moss and roots instead of dungeon-style masonry.

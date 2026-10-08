@@ -427,7 +427,7 @@ export class CourseScene extends Phaser.Scene {
           overlaps(bodyRect, creatureRect(h, this.run.elapsed)) &&
           !shieldActive(this.run.shieldAt, this.run.elapsed, this.character.power))
           this.end("dead", h.kind === "spider" ? "The spider caught you. Wait for it to climb, then pass underneath." :
-            "The snake struck. Wait on the dry bank, then ride the current during its recovery.");
+            "The snake struck. Steer against the current, then pass during its recovery.");
       }
       if (inJungle && this.run.status === "running") {
         for (const water of room.water ?? []) {

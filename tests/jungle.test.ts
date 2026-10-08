@@ -1,9 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { waterVelocity, creatureRect, safeToCross, crossedExit } from '../src/game/jungle';
+import { waterVelocity, creatureRect, safeToCross, crossedExit, jungleActions } from '../src/game/jungle';
 import { assembleCourse } from '../src/game/rules';
 import { jungleRoom } from '../src/content/jungle';
 
 describe('Jungle movement and hazard rules', () => {
+  it('counter-steers while waiting in the connected river, then rides the safe crossing', () => {
+    const actor = { x: 530, feet: 920, halfWidth: 9, grounded: true };
+    const waiting = jungleActions(actor, 2, 100, jungleRoom.hazards);
+    expect(waterVelocity('river', waiting.move * 160, 0, 0, 160).vx).toBeLessThanOrEqual(0);
+    expect(jungleActions(actor, 2, 1500, jungleRoom.hazards).move).toBe(1);
+  });
   it('forces downward water movement even after a jump or glide', () => {
     expect(waterVelocity('waterfall', 0, -410, 0, 160).vy).toBeGreaterThanOrEqual(300);
     expect(waterVelocity('waterfall', 80, 65, 0, 160).vx).toBe(80);

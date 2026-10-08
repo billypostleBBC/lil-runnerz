@@ -9,11 +9,14 @@ export const jungleRoom: Room = {
   solids: [
     { x: 0, y: 312, w: 690, h: 48 },
     { x: 240, y: 560, w: 520, h: 48 },
+    { x: 100, y: 560, w: 56, h: 48 },
     { x: 760, y: 624, w: 140, h: 40 },
     { x: 900, y: 0, w: 24, h: 832 },
     { x: 1032, y: 980, w: 72, h: 140 },
     { x: 1104, y: 0, w: 16, h: 1120 },
-    { x: 120, y: 920, w: 780, h: 64 },
+    // Continuous basin floor and a solid cliff below the arrival shelf.
+    { x: 0, y: 920, w: 900, h: 200 },
+    { x: 0, y: 360, w: 100, h: 760 },
     { x: 350, y: 900, w: 72, h: 20 },
     { x: 1000, y: 852, w: 104, h: 16 },
     { x: 936, y: 792, w: 64, h: 16 },
@@ -31,7 +34,7 @@ export const jungleRoom: Room = {
   water: [
     {kind: 'waterfall', x: 156, y: 546, w: 84, h: 344},
     {kind: 'whirlpool', x: 120, y: 876, w: 230, h: 44},
-    {kind: 'river', x: 560, y: 888, w: 340, h: 32},
+    {kind: 'river', x: 350, y: 888, w: 550, h: 32},
     {kind: 'waterfall', x: 932, y: 948, w: 100, h: 172},
   ],
 };

@@ -77,3 +77,11 @@ Five-cell capability bars use fixed absolute bands, not roster ranking or upgrad
 | Recharge cooldown (s) | >6 | >4.5–6 | >3–4.5 | >1.5–3 | ≤1.5 |
 
 Camera defaults live in `src/game/camera.ts`. Both modes use the same 512×288 view, 28px directional look-ahead, 90–240px vertical dead zone and 140ms easing. Ordinary jumps fit the dead zone; substantial elevation changes track vertically. The cave/jungle boundary no longer switches vertical thresholds or snaps the scroll. The jungle’s first-drop preview is retained, with a full-character visibility constraint. Reduced motion removes easing and anticipatory decorative panning; world bounds and gameplay tracking remain active.
+
+## Water rendering — 8 October 2026
+
+Water uses the same detailed 16-bit-inspired treatment as the scenery: stepped petrol/teal shading, irregular falling ribbons, fine reflected highlights, broken foam crests and shaded whirlpool currents. Avoid flat cyan panels, evenly spaced dash grids and large uniform stripes. Keep the crisp logical pixel grid; do not introduce blurred gradients or photorealistic water. Render the water body inside the defined force regions. Mossy boulders, small shrubs and fern fronds frame the banks as foreground dressing overlapping the water edges, without pale platform-like top edges or new collision surfaces. Break up rectangular water silhouettes with stepped shorelines and irregular overlapping rim stones; keep river outflows open and visually continuous. Broken cream-white foam and sparse pixel spray may extend just above the waterfall lip and pool; keep the whirlpool throat visible and leave the playable route clear. Use simulation time for animation; reduced motion retains the full static texture and stops decorative movement.
+
+## Room-specific solid terrain — 8 October 2026
+
+Do not reuse dungeon masonry for every theme. Ember Vault keeps bevelled worked stone and warm cream edges. Hollow Grotto uses uneven teal rock strata, fractures and restrained mineral flecks. Jungle Run uses mottled brown mud, exposed roots and a moss/vegetation rim. Keep each walkable top legible and all material texture clipped to actual solid geometry. Cliff artwork must stop at the basin surface so it cannot cover the continuous ground-to-wall junction.

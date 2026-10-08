@@ -185,6 +185,53 @@ export function paintBackground(
   }
 }
 
+function naturalTerrain(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, jungle: boolean) {
+  rect(c, x, y, w, h, jungle ? '#382e28' : '#203c43');
+  // Unequal strata and fractured facets replace the dungeon's regular blocks.
+  for (let row = 5; row < h; row += 13) {
+    for (let col = -12; col < w; col += 23) {
+      const seed = hash(x + col, y + row);
+      const width = 15 + Math.floor(seed * 22);
+      const depth = 7 + Math.floor(hash(col, row) * 10);
+      const palette = jungle ? ['#514032', '#46382d', '#604936', '#302d28'] : ['#36565b', '#2a484f', '#456367', '#19343e'];
+      for (let step = 0; step < depth; step += 2) {
+        const inset = Math.floor(step / 4);
+        rect(c, x + col + inset, y + row + step, width - inset * 2, 2, palette[Math.floor(seed * 4)]);
+      }
+      rect(c, x + col + 3, y + row, width - 7, 1, jungle ? '#786044' : '#668383');
+      rect(c, x + col + width - 4, y + row + 4, 2, depth, jungle ? '#292b24' : '#112d36');
+    }
+  }
+  for (let col = 0; col < w; col += 5) {
+    const seed = hash(x + col, y);
+    const depth = 3 + Math.floor(seed * (jungle ? 9 : 4));
+    rect(c, x + col, y, 5, depth, jungle ? '#4e6840' : '#547574');
+    rect(c, x + col, y, 5, 2, jungle ? '#95a26b' : '#a4bcb0');
+    rect(c, x + col + 1, y + 2, 2, depth, jungle ? '#73844f' : '#6c9290');
+    if (jungle && seed > .76) {
+      // Roots weave down through the exposed mud beneath the mossy rim.
+      for (let dy = 8; dy < Math.min(h, 31 + seed * 23); dy += 3) {
+        const dx = Math.floor(Math.sin(dy / 12 + col) * 4);
+        rect(c, x + col + dx, y + dy, 2, 3, '#8a7048');
+        if (dy % 2 === 0) rect(c, x + col + dx + 2, y + dy, 3, 1, '#604d35');
+      }
+    } else if (!jungle && seed > .78) {
+      rect(c, x + col, y + 10, 2, 5, '#689c97');
+      rect(c, x + col + 2, y + 12, 3, 2, '#8db7aa');
+    }
+  }
+  if (jungle) {
+    for (let row = 8; row < h; row += 5) {
+      for (let col = 2; col < w; col += 7) {
+        const seed = hash(x + col, y + row);
+        if (seed < .45) continue;
+        rect(c, x + col + Math.floor(seed * 3), y + row, 1 + Math.floor(seed * 3), 1,
+          seed > .8 ? '#846b4b' : '#292b24');
+      }
+    }
+  }
+}
+
 export function paintTerrain(c: CanvasRenderingContext2D, course: Course) {
   for (const room of course.rooms) {
     c.save(); c.translate(0, room.offsetY);
@@ -196,6 +243,11 @@ export function paintTerrain(c: CanvasRenderingContext2D, course: Course) {
       c.beginPath();
       c.rect(x, s.y, s.w, s.h);
       c.clip(); // Texture never bleeds into a pit or changes a platform's silhouette.
+      if (room.theme !== 'dungeon') {
+        naturalTerrain(c, x, s.y, s.w, s.h, room.theme === 'jungle');
+        c.restore();
+        continue;
+      }
       rect(c, x, s.y, s.w, s.h, palette[0]);
       for (let y = s.y + 8, row = 0; y < s.y + s.h; y += 18, row++) {
         for (let bx = x - (row % 2) * 18; bx < x + s.w; bx += 36)
