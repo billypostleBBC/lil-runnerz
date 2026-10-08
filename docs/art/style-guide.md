@@ -29,7 +29,7 @@ The existing pixel typography, visible focus treatment and charcoal/cream interf
 
 ## Scale and layers
 
-The logical game viewport remains 640×360. The course uses logical pixels; the current rooms are 1440×432 with floor Y=312. Increasing visual detail must never rescale physics, character dimensions, gap widths or camera coordinates.
+The logical gameplay viewport is now 512×288 (7 October 2026), giving 1.25× closer framing in the same display area. The course uses logical pixels; the current rooms are 1440×432 with floor Y=312. Increasing visual detail must never rescale physics, world-space character dimensions or gap widths.
 
 Panoramas render without image smoothing, retain their aspect ratio and cover each room. They scroll at 0.35 of camera travel; chains and nearby cave formations use 0.62. Torches stay attached to the rear wall. Foreground platforms and hazards use world coordinates. Reduced motion removes parallax and decorative flicker while preserving meaningful hazard activation and warning states.
 
@@ -56,6 +56,24 @@ The current implementation supports dungeon, cave and jungle themes directly. Ju
 
 ## Arcade shell — 6 October 2026
 
-The user-approved interface uses a fixed 3:2 screen, scaling to fit the window. Splash, runner selection, help, fullscreen settings, pause and results all live inside this screen. The original 640×360 playfield remains unchanged, with the remaining vertical space reserved for the top and bottom HUD. This preserves camera visibility and room geometry. On narrow screens, longer menus scroll inside the frame; manual play still requires a keyboard.
+The user-approved interface uses a fixed 3:2 screen, scaling to fit the window. Splash, runner selection, help, fullscreen settings, pause and results all live inside this screen. The 16:9 gameplay area uses a 512×288 logical view, with the remaining vertical space reserved for the top and bottom HUD. World geometry and physics remain unchanged. On narrow screens, longer menus scroll inside the frame; manual play still requires a keyboard.
 
 The title screen reuses the Ember Vault scenery and warm cream/amber pixel lettering. The approved generated cabinet artwork (`public/assets/ui/arcade-cabinet.png`) appears when the window has sufficient width and height; it is hidden on smaller windows and in fullscreen. Cabinet controls are decorative and excluded from accessibility navigation. Actual menus use native HTML buttons and radio controls, with visible keyboard focus. The unchanged approved mock-up supplies only the decorative surround: the opaque live viewport covers its illustrated screen. All menus remain native interactive HTML. The surround is fitted vertically to preserve the exact 3:2 opening. Arrow keys navigate menu actions, left/right changes runners, and Enter on a runner moves to the run controls. The selected avatar bobs unless reduced motion is requested.
+
+
+## Runner menus and camera — 7 October 2026
+
+Selection uses bevelled stone/metal panels, cream pixel labels, yellow focus and stepped lighting. The heading and actions occupy fixed rows; the centre scrolls independently on small/short screens. Description space is reserved equally for every runner. The preview is 192×208 for the detailed characters on desktop, with original-source smoothing, and adapts on small screens. Marty remains pixel-rendered. Visible controls are in How to play, not the selection screen. Arrows or WASD navigate menus; Enter chooses; Escape goes back. Manual power uses physical Left Shift.
+
+The original angular Z is an inline SVG (not a copied logo). On each page load, one available runner is chosen randomly for the title, independently of the selected playable runner. Existing run frames are cropped to measured alpha bounds and drawn at display resolution; their feet share a fixed point on the Z’s lower stroke. Reduced motion holds a single frame and disables preview bobbing.
+
+Five-cell capability bars use fixed absolute bands, not roster ranking or upgrades. Exact values remain visible alongside the bars. For speed, jump and duration, bands 1–4 have inclusive upper limits; higher values fill more cells. Recharge reverses the direction: shorter cooldowns fill more cells. These are separate capability scales, not a claim that different powers are equally strong.
+
+| Stat | 1 cell | 2 cells | 3 cells | 4 cells | 5 cells |
+| --- | --- | --- | --- | --- | --- |
+| Speed (px/s) | ≤80 | ≤120 | ≤180 | ≤240 | >240 |
+| Nominal jump (px) | ≤40 | ≤70 | ≤100 | ≤130 | >130 |
+| Power duration (s) | ≤0.4 | ≤0.8 | ≤1.2 | ≤1.6 | >1.6 |
+| Recharge cooldown (s) | >6 | >4.5–6 | >3–4.5 | >1.5–3 | ≤1.5 |
+
+Camera defaults live in `src/game/camera.ts`. Both modes use the same 512×288 view, 28px directional look-ahead, 90–240px vertical dead zone and 140ms easing. Ordinary jumps fit the dead zone; substantial elevation changes track vertically. The cave/jungle boundary no longer switches vertical thresholds or snaps the scroll. The jungle’s first-drop preview is retained, with a full-character visibility constraint. Reduced motion removes easing and anticipatory decorative panning; world bounds and gameplay tracking remain active.

@@ -6,7 +6,7 @@ Marty is selectable alongside Codex before a run. Both have 160 logical pixels/s
 
 ## Hoverboard rules
 
-- Press X whilst airborne to deploy; a grounded press does not spend the power.
+- Press Left Shift whilst airborne to deploy; a grounded press does not spend the power.
 - Maximum 1.2 seconds, ending early on landing. Landing cancels the remainder, so a second jump cannot reuse it.
 - Caps downward velocity at 65 pixels/second, preserving upward momentum. No added lift, double jump or immunity to flames/spikes.
 - Four-second recharge measured from activation, using unpaused simulation time.

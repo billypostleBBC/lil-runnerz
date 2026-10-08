@@ -1,5 +1,8 @@
 import { checkCharacterAvailability } from "./content/character-availability";
 import Phaser from "phaser";
+import { TitleRunner } from "./title-runner";
+import { GAME_VIEW } from "./game/camera";
+import { characterStats } from "./character-presentation";
 import "./style.css";
 import { CourseScene } from "./game/scene";
 import { rooms } from "./content/rooms";
@@ -32,6 +35,8 @@ const characters = definitions.map((definition) => definition.character);
 let selected = getCharacter(defaultCharacterId).character;
 let sceneReady = false;
 let charactersReady = false;
+const titleRunner = new TitleRunner();
+let titleRunnerChosen = false;
 let menuView: "splash" | "selection" | "help" | "settings" = "splash";
 function showMenu(view: typeof menuView, focus = true) {
   menuView = view;
@@ -47,7 +52,7 @@ function showMenu(view: typeof menuView, focus = true) {
   el("splash-actions").hidden = !splash;
   el("back-splash").hidden = splash || choosing;
   el("screen-note").hidden = !splash;
-  el("screen-note").textContent = "↑ ↓ SELECT · ENTER TO CHOOSE";
+  el("screen-note").textContent = "↑ ↓ / W S SELECT · ENTER TO CHOOSE";
   el("screen-eyebrow").hidden = true;
   el("screen-description").hidden = true;
   el("screen-title").textContent = choosing
@@ -57,6 +62,15 @@ function showMenu(view: typeof menuView, focus = true) {
       : view === "settings"
         ? "SETTINGS"
         : "lil-runnerz";
+  if (splash) {
+    el("screen-title").replaceChildren(
+      el<HTMLTemplateElement>("title-art").content.cloneNode(true),
+    );
+    el("screen-title")
+      .querySelector(".title-runner-anchor")!
+      .append(titleRunner.canvas);
+    titleRunner.play();
+  }
   primary.textContent = loaded ? "START GAME" : "LOADING…";
   secondary.hidden = true;
   if (focus)
@@ -116,25 +130,33 @@ function previewCharacter() {
     selected.power.kind === "glide" ? "HOVERBOARD GLIDE" : "PROTECTIVE SHIELD";
   const stats = el("preview-stats");
   stats.replaceChildren();
-  for (const [label, value] of [
-    ["Speed", `${selected.speed} px/s`],
-    [
-      "Jump height",
-      `${Math.round(selected.jumpSpeed ** 2 / (2 * selected.gravity))} px`,
-    ],
-    ["Power lasts", `${selected.power.durationMs / 1000}s`],
-    ["Recharge", `${selected.power.cooldownMs / 1000}s`],
-  ]) {
-    const dt = document.createElement("dt"),
-      dd = document.createElement("dd");
-    dt.textContent = label;
-    dd.textContent = value;
+  for (const stat of characterStats(selected)) {
+    const dt = document.createElement("dt");
+    dt.textContent = stat.label;
+    const dd = document.createElement("dd");
+    const meter = document.createElement("span");
+    meter.className = "stat-cells";
+    meter.setAttribute("role", "img");
+    meter.setAttribute(
+      "aria-label",
+      `${stat.rating} of 5${stat.label === "Recharge" ? "; more segments means faster recharge" : ""}`,
+    );
+    for (let index = 0; index < 5; index++) {
+      const cell = document.createElement("i");
+      cell.classList.toggle("filled", index < stat.rating);
+      cell.setAttribute("aria-hidden", "true");
+      meter.append(cell);
+    }
+    const value = document.createElement("span");
+    value.className = "stat-value";
+    value.textContent = stat.value;
+    dd.append(meter, value);
     stats.append(dt, dd);
   }
   el("preview-description").textContent =
     selected.power.kind === "glide"
       ? "Glide while airborne. No protection from hazards. Recharge starts on activation."
-      : "Brief protection from flames, spikes and creatures. Does not stop currents or protect against falls. Recharge starts on activation.";
+      : "Blocks flames, spikes and creatures. Falls and currents still affect you. Recharge starts on activation.";
 }
 previewCharacter();
 function focusCanvas() {
@@ -143,7 +165,7 @@ function focusCanvas() {
     canvas.tabIndex = 0;
     canvas.setAttribute(
       "aria-label",
-      "Game world. Use arrow keys to move, Space to jump and X for your power. Escape pauses.",
+      "Game world. Use arrow keys to move, Space to jump and Left Shift for your power. Escape pauses.",
     );
     canvas.focus({ preventScroll: true });
   }
@@ -225,7 +247,9 @@ function update(s: Snapshot) {
       primary.textContent = labels[2];
     }
   }
-  announce(`${el("screen-title").textContent} ${s.reason}`);
+  announce(
+    `${s.status === "ready" && menuView === "splash" ? "lil-runnerz" : el("screen-title").textContent} ${s.reason}`,
+  );
   if (loaded) primary.focus({ preventScroll: true });
 }
 let startingRun = false;
@@ -294,8 +318,23 @@ document
     }),
   );
 screen.addEventListener("keydown", (event) => {
+  const target = event.target;
   if (
-    event.key === "Escape" &&
+    target instanceof HTMLElement &&
+    (target.isContentEditable ||
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLInputElement && target.type !== "radio"))
+  )
+    return;
+  const mappedKey: Record<string, string> = {
+    KeyW: "ArrowUp",
+    KeyS: "ArrowDown",
+    KeyA: "ArrowLeft",
+    KeyD: "ArrowRight",
+  };
+  const key = mappedKey[event.code] ?? event.key;
+  if (
+    key === "Escape" &&
     current?.status === "ready" &&
     menuView !== "splash"
   ) {
@@ -304,31 +343,59 @@ screen.addEventListener("keydown", (event) => {
     return;
   }
   const active = document.activeElement;
+  if (active?.classList.contains("selection-layout") && key !== "Tab") {
+    if (mappedKey[event.code]) {
+      event.preventDefault();
+      active.scrollBy({
+        top: key === "ArrowDown" ? 40 : key === "ArrowUp" ? -40 : 0,
+        left: key === "ArrowRight" ? 40 : key === "ArrowLeft" ? -40 : 0,
+      });
+    }
+    return;
+  }
   const radio =
     active instanceof HTMLInputElement && active.name === "character";
-  if (radio && (event.key === "ArrowLeft" || event.key === "ArrowRight"))
+  if (radio && (key === "ArrowLeft" || key === "ArrowRight")) {
+    event.preventDefault();
+    const options = [
+      ...grid.querySelectorAll<HTMLInputElement>("input:not(:disabled)"),
+    ];
+    const index = options.indexOf(active as HTMLInputElement);
+    const next =
+      options[
+        (index + (key === "ArrowRight" ? 1 : -1) + options.length) %
+          options.length
+      ];
+    if (next) {
+      next.checked = true;
+      next.focus();
+      next.dispatchEvent(new Event("change", { bubbles: true }));
+    }
     return;
-  if (radio && event.key === "Enter") {
+  }
+  if (radio && key === "Enter") {
     event.preventDefault();
     el("start-auto").focus();
     return;
   }
   const arrow = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(
-    event.key,
+    key,
   );
-  if (event.key !== "Tab" && !arrow) return;
+  if (key !== "Tab" && !arrow) return;
   const focusable = [
     ...screen.querySelectorAll<HTMLElement>(
-      "button:not([hidden]):not(:disabled),input:checked:not(:disabled)",
+      'button:not([hidden]):not(:disabled),input:checked:not(:disabled),[tabindex="0"]',
     ),
   ].filter((e) => !e.closest("[hidden]"));
   if (arrow) {
     event.preventDefault();
-    const direction =
-      event.key === "ArrowUp" || event.key === "ArrowLeft" ? -1 : 1;
-    const index = focusable.indexOf(active as HTMLElement);
-    focusable[
-      (index + direction + focusable.length) % focusable.length
+    const direction = key === "ArrowUp" || key === "ArrowLeft" ? -1 : 1;
+    const navigation = focusable.filter(
+      (item) => !item.classList.contains("selection-layout"),
+    );
+    const index = navigation.indexOf(active as HTMLElement);
+    navigation[
+      (index + direction + navigation.length) % navigation.length
     ]?.focus();
     return;
   }
@@ -368,6 +435,14 @@ async function checkOptions() {
       input.parentElement!.querySelector("small")!.textContent =
         availability.reason;
   }
+  if (!titleRunnerChosen) {
+    const available = checks.filter((check) => check.availability.available);
+    if (available.length) {
+      const pick = available[Math.floor(Math.random() * available.length)];
+      titleRunnerChosen = true;
+      void titleRunner.load(getCharacter(pick.id));
+    }
+  }
   charactersReady = true;
   enableWhenReady();
 }
@@ -386,8 +461,8 @@ try {
   const game = new Phaser.Game({
     type: Phaser.CANVAS,
     parent: "game",
-    width: 640,
-    height: 360,
+    width: GAME_VIEW.width,
+    height: GAME_VIEW.height,
     backgroundColor: "#171b25",
     pixelArt: true,
     roundPixels: true,

@@ -1,14 +1,14 @@
 async (page) => {
-  await page.goto('http://127.0.0.1:5176');
+  await page.goto('http://127.0.0.1:5175');
   await page.getByRole('button', {name:'▶ START GAME',exact:true}).click();
   await page.getByRole('button', {name:'Manual run →',exact:true}).click();
   await page.waitForFunction(() => window.__jumpa.snapshot().status === 'running');
-  let direction=0, stage=0, bonus=0, takeoff=false;
+  let direction=0, stage=0, bonus=0, takeoff=false; const camera=[];
   const seen=new Set();
   const trace=[{event:'start',...await page.evaluate(()=>window.__jumpa.snapshot())}];
   for(let i=0;i<1450;i++) {
     const s=await page.evaluate(()=>window.__jumpa.snapshot());
-    if(s.status!=='running') { trace.push(s); break; }
+    camera.push(s); if(s.status!=='running') { trace.push(s); break; }
     let a;
     const x=s.x-2880;
     if(s.room<2) {
@@ -37,7 +37,7 @@ async (page) => {
           const ready=s.grounded && Math.abs(x-takeoffX)<7;
           const aim=s.grounded&&!ready?takeoffX:target;
           a={move:Math.abs(x-aim)<4?0:x<aim?1:-1,jump:ready,power:false};
-          if(bonus===7){trace.push({event:'bonus reached',...s});await page.screenshot({path:'output/playwright/jungle-bonus.png'});break;}
+          if(bonus===7){trace.push({event:'bonus reached',...s});await page.screenshot({path:'output/playwright/refined-camera-bonus.png'});break;}
         }
       }
       const key=stage+'-'+bonus;
@@ -51,4 +51,5 @@ async (page) => {
   if(direction)await page.keyboard.up(direction===1?'ArrowRight':'ArrowLeft');
   await page.keyboard.press('Escape');
   await page.evaluate(trace=>window.jungleVerification=trace,trace);
+  const seam=camera.filter(s=>s.x>2750&&s.x<3000); return {trace,maxSeamDelta:Math.max(...seam.slice(1).map((s,i)=>Math.abs(s.cameraY-seam[i].cameraY))),rangeY:[Math.min(...camera.map(s=>s.cameraY)),Math.max(...camera.map(s=>s.cameraY))]};
 }

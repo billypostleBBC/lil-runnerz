@@ -1,3 +1,4 @@
+import { CAMERA_FLOOR_LINE, GAME_VIEW, followView } from "./camera";
 import { creatureRect, crossedExit, jungleActions, jungleStage, overlaps, waterVelocity } from "./jungle";
 import Phaser from "phaser";
 import { characters, defaultCharacterId, getCharacter } from "../content/character";
@@ -77,7 +78,7 @@ export class CourseScene extends Phaser.Scene {
       cave: this.textures.get("scenery:cave").getSourceImage() as HTMLImageElement,
     };
     validateCharacters(characters);
-    this.backdrop = this.textures.createCanvas("backdrop", 640, 360)!;
+    this.backdrop = this.textures.createCanvas("backdrop", GAME_VIEW.width, GAME_VIEW.height)!;
     this.add
       .image(0, 0, "backdrop")
       .setOrigin(0)
@@ -251,7 +252,7 @@ export class CourseScene extends Phaser.Scene {
     this.lastProgressTime = 0;
     this.jumpBufferedUntil = 0;
     this.groundedAt = -1000;
-    this.cameras.main.setScroll(0, 0);
+    this.cameras.main.setScroll(0, Math.max(0, this.player.y - CAMERA_FLOOR_LINE));
     this.physics.resume();
     this.publish();
   }
@@ -318,7 +319,7 @@ export class CourseScene extends Phaser.Scene {
     this.decision = "Ready when you are";
     this.player.setPosition(80, 313.25).setVelocity(0, 0);
     (this.player.body as Phaser.Physics.Arcade.Body).updateFromGameObject();
-    this.cameras.main.setScroll(0, 0);
+    this.cameras.main.setScroll(0, Math.max(0, this.player.y - CAMERA_FLOOR_LINE));
     this.publish();
   }
   private end(status: "dead" | "won" | "stuck", reason: string) {
@@ -474,6 +475,7 @@ export class CourseScene extends Phaser.Scene {
       this.reduced,
       this.course,
       this.scenery,
+      GAME_VIEW.width, GAME_VIEW.height,
     );
     this.backdrop.refresh();
     paintHazards(
@@ -548,33 +550,18 @@ export class CourseScene extends Phaser.Scene {
     const cam = this.cameras.main;
     const room = this.course.rooms.find(r => this.player.x >= r.offset && this.player.x < r.offset + r.width);
     const deepJungle = room?.theme === "jungle" && this.player.y > room.offsetY + 420;
-    const targetX = Phaser.Math.Clamp(
-      this.player.x - 300 + this.facing * 28,
-      deepJungle ? room.offset : 0,
-      this.course.width - 640,
-    );
-    const amount = this.reduced ? 1 : 1 - Math.exp(-dt / 125);
-    cam.scrollX += (targetX - cam.scrollX) * amount;
-    // Vertical dead zone avoids camera bobbing on ordinary jumps.
-    const screenY = this.player.y - cam.scrollY;
-    const lowerEdge = room?.theme === "jungle" ? 260 : 328;
-    // Reveal the landing and spike tips before committing to the first long drop.
     const approachingDrop = room?.theme === "jungle" && this.player.x - room.offset > 600 &&
       this.player.x - room.offset < 760 && this.player.y - room.offsetY < 420;
-    if (approachingDrop) cam.scrollY += (room.offsetY + 264 - cam.scrollY) * amount;
-    else if (screenY < 100)
-      cam.scrollY = Phaser.Math.Clamp(
-        this.player.y - 100,
-        0,
-        this.course.height - 360,
-      );
-    else if (screenY > lowerEdge)
-      cam.scrollY = Phaser.Math.Clamp(
-        this.player.y - lowerEdge,
-        0,
-        this.course.height - 360,
-      );
+    const next = followView({
+      x: this.player.x, y: this.player.y, scrollX: cam.scrollX, scrollY: cam.scrollY,
+      facing: this.facing, width: this.course.width, height: this.course.height,
+      dt, reduced: this.reduced, minimumX: deepJungle ? room.offset : 0,
+      // Keep the first landing visible before the commitment; clamped to retain the runner.
+      revealY: approachingDrop ? room.offsetY + 264 : undefined,
+    });
+    cam.setScroll(next.x, next.y);
   }
+
   snapshot(): Snapshot {
     const body = this.player?.body as Phaser.Physics.Arcade.Body | undefined;
     return {

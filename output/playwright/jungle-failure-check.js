@@ -15,7 +15,7 @@ async (page) => {
         const c=window.__jumpa.content();const s=window.__jumpa.snapshot();const course=rules.assembleCourse(c.rooms);
         return rules.chooseActions({x:s.x,feet:s.feet,halfWidth:9,grounded:s.grounded},course.solids,course.hazards,c.characters[0].controllerProfile,s.elapsed);
       });
-      if(a.jump)await page.keyboard.press('Space');if(a.power)await page.keyboard.press('KeyX');
+      if(a.jump)await page.keyboard.press('Space');if(a.power)await page.keyboard.press('ShiftLeft');
     }
     await page.waitForTimeout(30);
   }

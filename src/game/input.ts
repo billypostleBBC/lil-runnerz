@@ -5,7 +5,7 @@ const gameKeys = new Set([
   "ArrowLeft",
   "ArrowRight",
   "Space",
-  "KeyX",
+  "ShiftLeft",
 ]);
 export class ManualInput {
   private held = new Set<string>();
@@ -33,7 +33,7 @@ export class ManualInput {
     event.preventDefault();
     if (!event.repeat) {
       if (event.code === "Space") this.jump = true;
-      if (event.code === "KeyX") this.power = true;
+      if (event.code === "ShiftLeft") this.power = true;
     }
     this.held.add(event.code);
   };

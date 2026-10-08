@@ -63,7 +63,7 @@ main {
   background: #0d1720;
   outline: 2px solid #080e14;
 }
-/* The 640×360 playfield retains its camera and physics, inside a 3:2 screen. */
+/* A 16:9 gameplay view sits inside the 3:2 screen with internal HUD bands. */
 #game {
   position: absolute;
   top: 7.8125%;
@@ -105,8 +105,7 @@ canvas:focus-visible {
   bottom: 0;
   justify-content: flex-end;
 }
-.cabinet:not(.playing) .run-bar,
-.cabinet:not(.playing) .game-hud-bottom {
+.cabinet:not(.playing) .game-hud {
   visibility: hidden;
 }
 .room-label,
@@ -239,12 +238,6 @@ canvas:focus-visible {
   max-width: 570px;
   margin: 0 auto 20px;
 }
-.selection-layout {
-  display: grid;
-  grid-template-columns: 1.5fr 1fr;
-  gap: 24px;
-  text-align: left;
-}
 fieldset {
   border: 0;
   padding: 0;
@@ -260,10 +253,48 @@ legend,
   clip-path: inset(50%);
   white-space: nowrap;
 }
+/* Selection has fixed header/actions and one independently scrollable content area. */
+.screen.selection {
+  padding: 12px 3% 0;
+  display: block;
+  overflow: hidden;
+}
+.selection .screen-card {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+.selection #screen-title {
+  margin: 0 0 12px;
+  font-size: clamp(12px, 2.2cqw, 22px);
+}
+#selection {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+.selection-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+  text-align: left;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #a5753d #14212b;
+  scrollbar-width: thin;
+  padding: 4px;
+  scroll-padding: 8px;
+}
+.selection-layout:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
 .character-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 .character-grid label {
   position: relative;
@@ -280,30 +311,46 @@ legend,
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  min-height: 200px;
-  border: 2px solid #4d606b;
-  background: #1c2c37;
-  padding: 10px;
+  gap: 10px;
+  min-height: 164px;
+  padding: 14px 8px 10px;
+  border: 4px solid #445562;
+  background: repeating-linear-gradient(
+    0deg,
+    #192631 0 24px,
+    #1c2b36 24px 26px
+  );
+  box-shadow:
+    inset 3px 3px #60717a,
+    inset -3px -3px #080e17,
+    3px 3px #080e17;
   text-align: center;
 }
 .character-tile strong {
-  font-size: 12px;
+  font: clamp(8px, 1.05cqw, 11px)/1.6 var(--pixel);
+  min-height: 3.2em;
+  display: grid;
+  place-items: center;
 }
 .character-tile small {
   font-size: 11px;
   color: #b8c6cb;
+  min-height: 1.5em;
 }
 .character-grid input:checked + .character-tile {
-  border-color: var(--accent);
-  background: #3a3428;
+  border-color: #c18b43;
+  background: #3a3025;
+  box-shadow:
+    inset 3px 3px #ffe0a0,
+    inset -3px -3px #705020,
+    3px 3px #080e17;
   color: var(--accent);
 }
 .character-grid input:checked + .character-tile::after {
   content: "✓";
   position: absolute;
-  top: 6px;
-  right: 8px;
+  top: 7px;
+  right: 10px;
   color: var(--accent);
 }
 .character-grid input:focus + .character-tile {
@@ -314,8 +361,8 @@ legend,
 .character-grid input:focus + .character-tile::before {
   content: "▶";
   position: absolute;
-  top: 6px;
-  left: 8px;
+  top: 7px;
+  left: 10px;
   color: var(--accent);
 }
 .character-grid label:hover .character-tile {
@@ -337,18 +384,69 @@ legend,
 }
 .runner-sprite.marty {
   height: 120px;
-  background-size: 1344px 120px;
+  background-size: 1400% 100%;
   image-rendering: pixelated;
 }
+.character-tile .runner-sprite {
+  width: 72px;
+  height: 78px;
+}
+.character-tile .runner-sprite.marty {
+  height: 90px;
+  margin-block: -6px;
+}
+.character-detail {
+  min-width: 0;
+  padding: 8px 12px;
+  border: 4px solid #394d5b;
+  box-shadow:
+    inset 2px 2px #68747b,
+    inset -2px -2px #080e17,
+    3px 3px #080e17;
+  background: #14212c;
+}
 .preview-stage {
-  height: 118px;
+  height: 208px;
   display: grid;
   place-items: center;
-  margin-bottom: 10px;
-  background: radial-gradient(ellipse at bottom, #33526088, transparent 65%);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 2px;
+}
+.preview-stage::before {
+  content: "";
+  position: absolute;
+  width: 72%;
+  height: 56%;
+  bottom: 0;
+  background: #223e47;
+  box-shadow:
+    0 -14px #1e333f,
+    0 -28px #192c37;
+  clip-path: polygon(
+    0 24%,
+    12% 24%,
+    12% 12%,
+    24% 12%,
+    24% 0,
+    76% 0,
+    76% 12%,
+    88% 12%,
+    88% 24%,
+    100% 24%,
+    100% 100%,
+    0 100%
+  );
 }
 .preview-stage .runner-sprite {
-  animation: runner-bob 1.2s ease-in-out infinite;
+  width: 192px;
+  height: 208px;
+  position: relative;
+  animation: runner-bob 1.2s steps(4, end) infinite;
+}
+.preview-stage .runner-sprite.marty {
+  width: 166.4px;
+  height: 208px;
 }
 @keyframes runner-bob {
   0%,
@@ -359,48 +457,89 @@ legend,
     transform: translateY(-6px);
   }
 }
-.screen.selection {
-  padding: 3%;
-}
-.selection #screen-title {
-  margin-bottom: 14px;
-}
-.selection .character-detail dl {
-  margin-block: 8px;
-}
-.selection .character-detail h3 {
-  margin-bottom: 6px;
-}
-.selection #preview-description {
-  margin-block: 8px;
-}
-
 .character-detail h3 {
-  font: 12px/1.6 var(--pixel);
-  margin: 0 0 12px;
+  font: clamp(9px, 1.3cqw, 13px)/1.6 var(--pixel);
+  margin: 0 0 4px;
+  min-height: 1.6em;
+}
+.character-detail .eyebrow {
+  font: clamp(7px, 1cqw, 10px)/1.6 var(--pixel);
+  color: var(--accent);
+  margin: 0 0 10px;
+  min-height: 1.6em;
 }
 .character-detail dl {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 7px;
-  font-size: 12px;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px 10px;
+  margin: 0;
+}
+.character-detail dt {
+  font: clamp(7px, 0.9cqw, 9px)/1.7 var(--pixel);
+  color: #d2d4cc;
 }
 .character-detail dd {
   margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
 }
-.character-detail dt,
-#preview-description {
-  color: #b8c6cb;
+.stat-cells {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3px;
+  width: 76px;
+  flex: none;
 }
-.screen-card #preview-description,
-.screen-card .selection-help {
+.stat-cells i {
+  height: 12px;
+  border: 1px solid #596773;
+  background: #0d151d;
+  box-shadow: inset 1px 1px #050a10;
+}
+.stat-cells .filled {
+  background: #d78832;
+  border-color: #ffce72;
+  box-shadow:
+    inset 0 3px #ffbe54,
+    inset 0 -2px #945622;
+}
+.stat-cells .filled:nth-child(n + 3) {
+  background: #efad42;
+}
+.stat-cells .filled:nth-child(5) {
+  background: #ffdb7d;
+}
+.stat-value {
+  font-size: 10px;
+  width: 56px;
+  text-align: right;
+  color: #c7c9bd;
+  white-space: nowrap;
+}
+.screen-card #preview-description {
   font-size: 11px;
+  line-height: 1.6;
+  margin: 10px 0 0;
+  block-size: 5em;
+  overflow-y: auto;
+  color: #bdc8cc;
 }
 .selection-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 12px;
-  padding-bottom: 5px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: 4px;
+  padding: 6px 0;
+  border-top: 3px solid #45535b;
+  background: #101a23;
+  box-shadow: 0 -3px #080e17;
+}
+.selection-actions button {
+  padding: 8px 4px;
+  font-size: clamp(8px, 1.2cqw, 12px);
 }
 .error-panel {
   position: absolute;
@@ -469,26 +608,8 @@ legend,
   .screen-card .screen-note {
     margin-top: 3cqw;
   }
-  .selection-layout {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-  .character-tile {
-    min-height: 150px;
-  }
-  .character-detail {
-    border-top: 1px solid #4d606b;
-    padding-top: 16px;
-  }
   .screen:not(.splash) {
     place-items: start center;
-  }
-  .selection-actions {
-    grid-template-columns: 1fr 1fr;
-  }
-  .selection-actions .secondary {
-    grid-column: 1 / -1;
-    grid-row: 2;
   }
   .game-hud-bottom {
     justify-content: flex-end;
@@ -497,6 +618,115 @@ legend,
   .room-label,
   .shield-meter {
     gap: 6px;
+  }
+}
+
+/* Title letters remain real text; Bill-e Bot uses its existing running sprite row. */
+.title-word {
+  display: inline-flex;
+  align-items: baseline;
+  position: relative;
+}
+.title-z {
+  position: relative;
+  display: inline-block;
+  width: 1.55em;
+  height: 1.7em;
+  margin-left: -0.08em;
+  margin-right: 0.1em;
+  vertical-align: baseline;
+}
+.title-z svg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  bottom: -0.43em;
+  overflow: visible;
+}
+.z-shadow {
+  fill: #7c481f;
+  stroke: #241c19;
+  stroke-width: 4px;
+  stroke-linejoin: bevel;
+}
+.z-face {
+  fill: #efae42;
+  stroke: #ffdd88;
+  stroke-width: 2px;
+  stroke-linejoin: bevel;
+}
+.z-highlight {
+  fill: #fff0bc;
+}
+.title-runner-anchor {
+  position: absolute;
+  left: 0.83em;
+  bottom: 0.23em;
+  width: 0.9em;
+  height: 1.06em;
+}
+canvas.title-runner {
+  width: 100%;
+  height: 100%;
+  image-rendering: auto;
+}
+.splash #screen-title {
+  font-size: clamp(22px, 5.8cqw, 64px);
+  padding-top: 4cqw;
+}
+@container (max-width: 650px) {
+  .selection-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .character-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .character-tile {
+    min-height: 156px;
+    padding: 12px 4px 8px;
+  }
+  .screen.selection {
+    padding: 8px 2% 0;
+  }
+  .selection #screen-title {
+    margin-bottom: 8px;
+    font-size: 11px;
+  }
+  .preview-stage {
+    height: 160px;
+  }
+  .preview-stage .runner-sprite {
+    width: 144px;
+    height: 156px;
+  }
+  .preview-stage .runner-sprite.marty {
+    width: 124.8px;
+    height: 156px;
+  }
+  .character-detail dt {
+    font-size: 8px;
+  }
+  .character-detail h3 {
+    font-size: 12px;
+  }
+  .character-detail .eyebrow {
+    font-size: 9px;
+  }
+  .stat-cells {
+    width: 100px;
+  }
+  .screen-card #preview-description {
+    font-size: 12px;
+  }
+  .selection-actions button {
+    font-size: 8px;
+    min-height: 44px;
+  }
+  .selection-actions {
+    padding-block: 2px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
