@@ -14,8 +14,8 @@ describe("selected character presentation", () => {
     expect(presentation.callToAction).toBe("LET BILL-E BOT LOOSE →");
     expect(presentation.watchLabel).toBe("WATCH BILL-E BOT");
     expect(presentation.portraitAsset).toBe("/assets/bill-e-bot.png");
-    expect(presentation.shieldSummary).toBe(
-      "Shield lasts 0.8s · Recharges in 4s",
+    expect(presentation.powerSummary).toBe(
+      "One upward boost · Recharges in 4s after activation; land before reuse",
     );
   });
 
@@ -29,7 +29,7 @@ describe("selected character presentation", () => {
 // Ratings are a stable display scale, independent of which runners are in the roster.
 describe("arcade capability ratings", () => {
   it("keeps equivalent physical capabilities equal and distinguishes power duration", () => {
-    const shield = characterStats(getCharacter("bill-e-bot").character);
+    const shield = characterStats(getCharacter("codex").character);
     const glide = characterStats(getCharacter("marty").character);
     expect(shield.map((stat) => stat.rating)).toEqual([3, 3, 2, 3]);
     expect(glide.map((stat) => stat.rating)).toEqual([3, 3, 3, 3]);
@@ -42,7 +42,7 @@ describe("arcade capability ratings", () => {
   });
 
   it("rewards faster recharge and clamps unusually high or low capabilities", () => {
-    const base = getCharacter("bill-e-bot").character;
+    const base = getCharacter("codex").character;
     const fast = {
       ...base,
       speed: 999,

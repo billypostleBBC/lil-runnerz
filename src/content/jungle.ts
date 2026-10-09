@@ -8,6 +8,9 @@ export const jungleRoom: Room = {
   exit: { edge: 'bottom', x: 932, y: 1120, clearance: 100 },
   solids: [
     { x: 0, y: 312, w: 690, h: 48 },
+    // Jumpable entrance obstacles: same 32px rise as the dungeon blocks.
+    { x: 288, y: 280, w: 64, h: 32, appearance: "boulder" },
+    { x: 520, y: 280, w: 48, h: 32, appearance: "boulder" },
     { x: 240, y: 560, w: 520, h: 48 },
     { x: 100, y: 560, w: 56, h: 48 },
     { x: 760, y: 624, w: 140, h: 40 },
@@ -29,7 +32,7 @@ export const jungleRoom: Room = {
   hazards: [
     {kind: 'spikes', x: 772, y: 592, w: 120, h: 32},
     {kind: 'spider', x: 508, y: 524, w: 30, h: 32, period: 4000, on: 1200, phase: 0},
-    {kind: 'snake', x: 648, y: 870, w: 56, h: 50, period: 4400, on: 1100, phase: 0},
+    {kind: 'snake', x: 648, y: 740, w: 32, h: 172, period: 4400, on: 1100, phase: 0},
   ],
   water: [
     {kind: 'waterfall', x: 156, y: 546, w: 84, h: 344},

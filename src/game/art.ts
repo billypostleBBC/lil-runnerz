@@ -1,5 +1,5 @@
 import { jungleBackground, jungleDetails, jungleWater } from "./jungle-art";
-import { creatureRect } from "./jungle";
+import { creatureRect, snakeShape } from "./jungle";
 import type { Course } from "./types";
 import { hazardWarning } from "./rules";
 
@@ -232,6 +232,26 @@ function naturalTerrain(c: CanvasRenderingContext2D, x: number, y: number, w: nu
   }
 }
 
+function boulderTerrain(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+  // Flat collision top and dark full silhouette, with stepped interior rock facets.
+  // Unlike the decorative bank stones, every visible edge here is solid.
+  rect(c, x, y, w, h, '#263b3d');
+  rect(c, x+2, y+3, w-5, h-5, '#48615a');
+  for (let row=5; row<h-3; row+=3) {
+    const inset = Math.floor(row/5);
+    rect(c, x+3+inset, y+row, Math.max(3,w*.56-inset), 3, row<h/2 ? '#637b6b' : '#526b60');
+    rect(c, x+w-8-inset, y+row, 5+inset, 3, '#314b48');
+  }
+  for (let col=5; col<w-4; col+=9) {
+    const crack = 5+Math.floor(hash(x+col,y)*10);
+    rect(c, x+col, y+crack, 2, h-crack-3, '#304641');
+    rect(c, x+col-2, y+crack, 4, 1, '#82917a');
+    rect(c, x+col, y+2, 6, 4+col%3, '#58734c');
+  }
+  rect(c, x, y, w, 2, '#afba83');
+  rect(c, x+1, y+2, w-2, 2, '#748d5c');
+}
+
 export function paintTerrain(c: CanvasRenderingContext2D, course: Course) {
   for (const room of course.rooms) {
     c.save(); c.translate(0, room.offsetY);
@@ -243,6 +263,11 @@ export function paintTerrain(c: CanvasRenderingContext2D, course: Course) {
       c.beginPath();
       c.rect(x, s.y, s.w, s.h);
       c.clip(); // Texture never bleeds into a pit or changes a platform's silhouette.
+      if (s.appearance === 'boulder') {
+        boulderTerrain(c, x, s.y, s.w, s.h);
+        c.restore();
+        continue;
+      }
       if (room.theme !== 'dungeon') {
         naturalTerrain(c, x, s.y, s.w, s.h, room.theme === 'jungle');
         c.restore();
@@ -333,15 +358,32 @@ export function paintHazards(
         rect(c,b.x+10,b.y+20,3,4,"#384437"); rect(c,b.x+17,b.y+20,3,4,"#384437");
         rect(c,b.x+6,b.y+8,4,4,"#fff0bc"); rect(c,b.x+20,b.y+8,4,4,"#fff0bc");
       } else {
-        // Stepped coils and an extended head keep the tree hazard recognisably a snake.
-        rect(c,b.x+10,b.y+7,10,b.h-12,colour);
-        rect(c,b.x+12,b.y+b.h-11,b.w-12,11,colour);
-        rect(c,b.x+b.w-10,b.y+18,10,Math.max(8,b.h-20),colour);
-        rect(c,b.x+15,b.y+15,Math.max(3,b.w-15),10,colour);
-        for (let y=b.y+12; y<b.y+b.h-8;y+=6) rect(c,b.x+11,y,5,2,"#354b33");
-        rect(c,b.x+16,b.y+b.h-5,Math.max(1,b.w-20),3,"#b5bc77");
-        rect(c,b.x,b.y,18,12,colour); rect(c,b.x+3,b.y+3,3,3,"#fff0bc");
-        if(active(h)) rect(c,b.x-5,b.y+8,6,2,"#eaa088");
+        const shape = snakeShape(h, elapsed);
+        const visible = active(h) || hazardWarning(h, elapsed);
+        if (visible) {
+          for (const segment of shape.body) {
+            rect(c,segment.x,segment.y,segment.w,segment.h,'#26362f');
+            rect(c,segment.x+2,segment.y,segment.w-4,segment.h,colour);
+            rect(c,segment.x+3,segment.y,3,segment.h,'#bbc583');
+            rect(c,segment.x+7,segment.y+2,3,2,'#4a6240');
+          }
+          const head = shape.head;
+          rect(c,head.x,head.y,head.w,head.h,'#26362f');
+          rect(c,head.x+2,head.y+2,head.w-4,head.h-4,colour);
+          rect(c,head.x+3,head.y+head.h-7,head.w-6,4,'#cfcc8c');
+          rect(c,head.x+5,head.y+5,6,4,'#fff0bc');
+          rect(c,head.x+head.w-11,head.y+5,6,4,'#fff0bc');
+          rect(c,head.x+8,head.y+5,2,4,'#242c2c');
+          rect(c,head.x+head.w-9,head.y+5,2,4,'#242c2c');
+          if (active(h)) {
+            rect(c,head.x+head.w/2-1,head.y+head.h,2,4,'#eaa088');
+            rect(c,head.x+head.w/2-3,head.y+head.h+3,6,1,'#eaa088');
+          }
+        } else {
+          // Only two eyes remain in the canopy during recovery.
+          rect(c,h.x+8,h.y-10,3,2,'#91ac73');
+          rect(c,h.x+h.w-11,h.y-10,3,2,'#91ac73');
+        }
       }
       if (hazardWarning(h,elapsed)) { c.font='14px monospace';c.fillStyle='#ffe2a1';c.fillText('!', b.x+8,b.y-8); }
       continue;

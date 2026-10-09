@@ -6,8 +6,9 @@ describe("selected character runtime", () => {
     const runtime = resolveCharacterRuntime("bill-e-bot");
     expect(runtime.textureKey).toBe("pet:bill-e-bot");
     expect(runtime.definition.character.power).toEqual({
-      kind: "shield",
-      durationMs: 800,
+      kind: "rocket",
+      boostSpeed: 360,
+      durationMs: 220,
       cooldownMs: 4000,
     });
     expect(runtime.definition.controllerProfile.reactionMs).toBe(120);

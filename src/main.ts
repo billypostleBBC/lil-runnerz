@@ -29,6 +29,7 @@ const screen = el("screen"),
 let current: Snapshot | undefined;
 let previousStatus: Status | undefined;
 let previousRoom = -1;
+let previousScore = 0;
 let scene: CourseScene;
 let loaded = false;
 const characters = definitions.map((definition) => definition.character);
@@ -36,9 +37,11 @@ let selected = getCharacter(defaultCharacterId).character;
 let sceneReady = false;
 let charactersReady = false;
 const titleRunner = new TitleRunner();
-let titleRunnerChosen = false;
+let menuPreviewChosen = false;
+let availableTitleCharacters: string[] = [];
 let menuView: "splash" | "selection" | "help" | "settings" = "splash";
 function showMenu(view: typeof menuView, focus = true) {
+  if (view !== "splash") menuPreviewChosen = false;
   menuView = view;
   const choosing = view === "selection";
   const splash = view === "splash";
@@ -63,6 +66,15 @@ function showMenu(view: typeof menuView, focus = true) {
         ? "SETTINGS"
         : "lil-runnerz";
   if (splash) {
+    // Readiness and snapshot updates can re-render the menu without a new visit.
+    if (loaded && !menuPreviewChosen) {
+      const room = scene.course.rooms[Math.floor(Math.random() * scene.course.rooms.length)];
+      const id = availableTitleCharacters[Math.floor(Math.random() * availableTitleCharacters.length)];
+      scene.previewRoom(room.id);
+      screen.dataset.previewRoom = room.id;
+      if (id) void titleRunner.load(getCharacter(id));
+      menuPreviewChosen = true;
+    }
     el("screen-title").replaceChildren(
       el<HTMLTemplateElement>("title-art").content.cloneNode(true),
     );
@@ -116,7 +128,7 @@ for (const runner of characters) {
   const name = document.createElement("strong");
   name.textContent = runner.name;
   const power = document.createElement("small");
-  power.textContent = runner.power.kind === "glide" ? "Hoverboard" : "Shield";
+  power.textContent = runner.power.kind === "glide" ? "Hoverboard" : runner.power.kind === "rocket" ? "Rocket boots" : "Shield";
   card.append(sprite, name, power);
   label.append(input, card);
   grid.append(label);
@@ -127,7 +139,7 @@ function previewCharacter() {
     `url("${import.meta.env.BASE_URL}${selected.asset}")`;
   el("preview-name").textContent = selected.name;
   el("preview-power").textContent =
-    selected.power.kind === "glide" ? "HOVERBOARD GLIDE" : "PROTECTIVE SHIELD";
+    selected.power.kind === "glide" ? "HOVERBOARD GLIDE" : selected.power.kind === "rocket" ? "ROCKET BOOTS" : "PROTECTIVE SHIELD";
   const stats = el("preview-stats");
   stats.replaceChildren();
   for (const stat of characterStats(selected)) {
@@ -156,6 +168,8 @@ function previewCharacter() {
   el("preview-description").textContent =
     selected.power.kind === "glide"
       ? "Glide while airborne. No protection from hazards. Recharge starts on activation."
+      : selected.power.kind === "rocket"
+        ? "One upward boost per jump or fall. Land and recharge to use again. No protection from hazards."
       : "Blocks flames, spikes and creatures. Falls and currents still affect you. Recharge starts on activation.";
 }
 previewCharacter();
@@ -183,9 +197,12 @@ function showError(message: string) {
 }
 function update(s: Snapshot) {
   current = s;
+  el("score-label").textContent = `SCORE ${String(s.score).padStart(4, "0")}`;
+  if (s.score > previousScore) announce(`${s.pickup}. Score ${s.score}.`);
+  previousScore = s.score;
   el("play").classList.toggle("playing", s.status === "running");
   el("power-label").textContent =
-    selected.power.kind === "glide" ? "HOVERBOARD" : "SHIELD";
+    selected.power.kind === "glide" ? "HOVERBOARD" : selected.power.kind === "rocket" ? "ROCKET BOOTS" : "SHIELD";
   const room = rooms[s.room];
   el("room-number").textContent = `0${s.room + 1}`;
   el("room-title").textContent = room.name.toUpperCase();
@@ -199,7 +216,7 @@ function update(s: Snapshot) {
     ? "ACTIVE"
     : s.cooldown > 0
       ? `${(s.cooldown / 1000).toFixed(1)}s`
-      : "READY";
+      : s.powerNeedsLanding ? "LAND TO REARM" : "READY";
   el("shield-status").textContent = shieldLabel;
   el("shield-fill").style.width =
     `${s.powerActive ? 100 : (1 - s.cooldown / selected.power.cooldownMs) * 100}%`;
@@ -216,7 +233,7 @@ function update(s: Snapshot) {
     screen.className = "screen";
     return;
   }
-  el("screen-description").textContent = s.reason;
+  el("screen-description").textContent = `${s.reason} Score ${s.score} · ${s.snacks} snacks × 10 · ${s.bonuses} bonuses × 100.`;
   if (s.status === "ready") {
     showMenu(menuView, false);
   } else {
@@ -435,14 +452,9 @@ async function checkOptions() {
       input.parentElement!.querySelector("small")!.textContent =
         availability.reason;
   }
-  if (!titleRunnerChosen) {
-    const available = checks.filter((check) => check.availability.available);
-    if (available.length) {
-      const pick = available[Math.floor(Math.random() * available.length)];
-      titleRunnerChosen = true;
-      void titleRunner.load(getCharacter(pick.id));
-    }
-  }
+  availableTitleCharacters = checks
+    .filter((check) => check.availability.available)
+    .map((check) => check.id);
   charactersReady = true;
   enableWhenReady();
 }

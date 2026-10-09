@@ -217,3 +217,19 @@ describe("local controller decisions", () => {
     ).toBe(false);
   });
 });
+
+import { FlameCrossingController } from '../src/game/rules';
+it('waits for a complete safe flame crossing, then commits through the gap', () => {
+  const controller=new FlameCrossingController();
+  const actor={x:2510,feet:312,halfWidth:9,grounded:true};
+  const hazard={kind:'flame' as const,x:2560,y:252,w:28,h:60,period:2800,on:1700,phase:0};
+  expect(controller.decide(actor,[hazard],100,160)).toEqual({move:0,jump:false,power:false});
+  expect(controller.decide(actor,[hazard],1750,160)).toEqual({move:1,jump:false,power:false});
+  expect(controller.decide({...actor,x:2570},[hazard],2200,160)?.move).toBe(1);
+  expect(controller.decide({...actor,x:2610},[hazard],2450,160)).toBeUndefined();
+});
+it('can cross the shorter dungeon flame off phase from its waiting point', () => {
+  const controller=new FlameCrossingController();
+  const flame={kind:'flame' as const,x:812,y:252,w:28,h:60,period:2600,on:1700,phase:0};
+  expect(controller.decide({x:762,feet:312,halfWidth:9,grounded:true},[flame],1710,160)?.move).toBe(1);
+});

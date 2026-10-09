@@ -13,7 +13,9 @@ export function characterPresentation(
         : "ENTER THE HOLLOW →",
     watchLabel: `WATCH ${definition.character.name.toUpperCase()}`,
     portraitAsset: `/${definition.character.asset}`,
-    shieldSummary: `Shield lasts ${seconds}s · Recharges in ${cooldown}s`,
+    powerSummary: definition.character.power.kind === "rocket"
+      ? `One upward boost · Recharges in ${cooldown}s after activation; land before reuse`
+      : `${definition.character.power.kind === "glide" ? "Glide" : "Shield"} lasts ${seconds}s · Recharges in ${cooldown}s`,
   };
 }
 
@@ -35,9 +37,13 @@ export function characterStats(character: Character) {
       rating: band(jump, [40, 70, 100, 130]),
     },
     {
-      label: "Power duration",
-      value: `${character.power.durationMs / 1000}s`,
-      rating: band(character.power.durationMs, [400, 800, 1200, 1600]),
+      label: character.power.kind === "rocket" ? "Boost rise" : "Power duration",
+      value: character.power.kind === "rocket"
+        ? `${Math.round(character.power.boostSpeed! ** 2 / (2 * character.gravity))} px`
+        : `${character.power.durationMs / 1000}s`,
+      rating: character.power.kind === "rocket"
+        ? band(character.power.boostSpeed! ** 2 / (2 * character.gravity), [40, 70, 100, 130])
+        : band(character.power.durationMs, [400, 800, 1200, 1600]),
     },
     {
       label: "Recharge",

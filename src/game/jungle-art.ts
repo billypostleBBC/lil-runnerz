@@ -100,6 +100,63 @@ function waterBanks(c: CanvasRenderingContext2D, room: Room) {
   }
 }
 
+function snakeTree(c: CanvasRenderingContext2D, room: Room) {
+  // A curving, flared trunk splits into limbs beneath a continuous dense crown.
+  // This tree is scenery; the snake's separate pixel segments own its collision.
+  const branch = (points: number[][], width: number) => {
+    for (let i=1;i<points.length;i++) {
+      const [ax,ay]=points[i-1], [bx,by]=points[i];
+      const steps=Math.ceil(Math.max(Math.abs(bx-ax),Math.abs(by-ay))/2);
+      for (let step=0;step<=steps;step++) {
+        const x=Math.round(ax+(bx-ax)*step/steps),y=Math.round(ay+(by-ay)*step/steps);
+        block(c,x-width/2,y-width/2,width,width,'#302f29');
+        block(c,x-width/2+2,y-width/2+1,width-4,width-3,'#65513a');
+        block(c,x-width/2+3,y-width/2+1,3,width-4,'#92734c');
+      }
+    }
+  };
+  branch([[739,878],[713,898],[671,916]],16);
+  branch([[744,876],[773,900],[815,916]],18);
+  branch([[735,893],[721,914],[704,920]],12);
+  for (let y=758;y<920;y+=3) {
+    const t=(y-758)/162;
+    const centre=734+Math.sin(t*Math.PI)*15-t*7;
+    const width=25+Math.floor(t**4*36);
+    block(c,centre-width/2,y,width,3,'#3c352c');
+    block(c,centre-width/2+3,y,width*.64,3,'#665039');
+    block(c,centre-width/2+5,y,4,3,'#93734b');
+    block(c,centre+width*.23,y,3,3,'#292d28');
+    if (y%9===0) block(c,centre-5,y,8,1,'#aa8453');
+  }
+  branch([[740,791],[716,765],[676,745],[644,719]],17);
+  branch([[738,791],[762,758],[801,737],[820,709]],15);
+  branch([[740,772],[737,739],[717,710]],12);
+  const crown = (x: number,y: number,w: number,h: number,seed: number) => {
+    for (let row=0;row<h;row+=4) {
+      const t=(row+2)/h*2-1;
+      const inset=Math.round((1-Math.sqrt(Math.max(0,1-t*t)))*w/2/3)*3;
+      block(c,x+inset,y+row,w-inset*2,4,'#153c32');
+      if(row>4&&row<h-8) block(c,x+inset+3,y+row,w-inset*2-6,4,row<h*.45?'#416c42':'#285339');
+    }
+    // Interlocking square leaf clusters keep the crown dense, with no scattered gaps.
+    for(let i=0;i<100;i++) {
+      const px=8+random(seed+i)* (w-16),py=10+random(seed+i+120)*(h-20);
+      if(((px-w/2)/(w*.45))**2+((py-h/2)/(h*.42))**2>1)continue;
+      const shade=py<h*.5?'#64834e':'#3b6841';
+      block(c,x+px,y+py,7+i%5,3,shade);
+      block(c,x+px+2,y+py+3,6,3,'#214c34');
+      if(i%5===0)block(c,x+px+1,y+py,3,1,'#96a361');
+    }
+  };
+  crown(597,675,122,96,31);
+  crown(660,642,140,126,61);
+  crown(751,667,126,104,91);
+  crown(632,714,129,65,111);
+  crown(737,711,121,65,141);
+  const snake = room.hazards.find(h => h.kind === 'snake');
+  if (snake) block(c,snake.x,snake.y-8,snake.w,10,'#15352c');
+}
+
 export function jungleDetails(c: CanvasRenderingContext2D, room: Room) {
   // Dress the solid left boundary as a sheer wet cliff. Its right edge matches
   // collision exactly; foliage grows inward so the chute stays readable.
@@ -127,15 +184,6 @@ export function jungleDetails(c: CanvasRenderingContext2D, room: Room) {
     }
     c.restore();
   }
-  // Bark, roots and leaves are behind the hazard; no pale collision-like edges.
-  for (let y = 712; y < 920; y += 8) {
-    const x = 721 - Math.floor((920 - y) / 24);
-    block(c, x, y, 36, 8, '#493d31');
-    block(c, x + 6, y, 5, 7, '#756044');
-    block(c, x + 27, y, 5, 8, '#292f2c');
-  }
-  for (let i = 0; i < 5; i++) block(c, 689 + i * 12, 906 - i * 5, 35, 6, '#514c36');
-  leaves(c, 727, 708, 96, 17, true);
   for (let x = 50; x < 650; x += 84) {
     leaves(c, x, 302, 25, x, true);
     for (let y = 360; y < 425 + x % 41; y += 7) {
@@ -143,18 +191,7 @@ export function jungleDetails(c: CanvasRenderingContext2D, room: Room) {
       if (y % 3 === 0) block(c, x - 4, y, 5, 3, '#6b8050');
     }
   }
-  c.font = '10px "Press Start 2P", monospace';
-  c.fillStyle = '#e7dfaf'; c.fillText('JUNGLE RUN', 130, 257);
-  c.font = '8px "Press Start 2P", monospace';
-  c.fillText('← SPIDER / FALLS', 568, 500);
-  c.fillText('CURRENT →', 475, 847);
-  c.fillText('JUMP →', 807, 866);
-  c.font = '7px "Press Start 2P", monospace';
-  c.fillText('BONUS AREA', 947, 448); c.fillText('COMING LATER', 940, 467);
-  c.fillText('EXIT ↓', 950, room.height - 45);
-  for (let y = 1024; y < room.height; y += 12) {
-    block(c, 928, y, 4, 8, '#e3c67e'); block(c, 1032, y, 4, 8, '#e3c67e');
-  }
+
 }
 // A small stepped colour ramp matches the shaded rock and foliage. All marks stay
 // on the logical pixel grid; no blur, gradients or additional image downloads.
@@ -307,4 +344,6 @@ export function jungleWater(c: CanvasRenderingContext2D, room: Room, time: numbe
   }
   // Foreground dressing must be painted after water to conceal its cut edges.
   waterBanks(c, room);
+  // Foreground roots stand in front of the river; the snake is painted above them.
+  snakeTree(c, room);
 }

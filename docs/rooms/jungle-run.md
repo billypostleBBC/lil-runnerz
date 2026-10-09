@@ -76,3 +76,19 @@ River rendering and force geometry now start at the whirlpool outflow (X=350); t
 ### Left ledge continuity — 8 October 2026
 
 Added a solid bank at X=100–156, Y=560–608, joining the left cliff to the waterfall lip at the same height as the spider shelf. The chute at X=156–240 remains open. The basin floor still spans X=0–900; cliff art now stops at Y=920 so its continuous top remains visible through the join. Jungle solids now use mud, moss and roots instead of dungeon-style masonry.
+
+### Collectibles — 9 October 2026
+
+The deferred bonus is now a chilli chutney jar worth 100 points. Ordinary snacks award 10. Autonomous runners pursue the climb and return down to the exit. Geometry remains unchanged: browser traversal confirmed the existing Y=852 first landing is reachable using the river-edge coyote jump. See [collectible rules](../collectibles.md) and [current verification](../../output/playwright/collectibles-verification.md). Historical deferral notes above describe the original room build.
+
+### Entrance boulders and signage — 9 October 2026
+
+Removed all in-world area lettering (room title, spider/falls, current, jump, bonus and exit labels) and the decorative exit marker strips. The global room/score/power HUD, controls and accessibility announcements remain. Two solid boulders now occupy the arrival shelf at local `(288,280,64,32)` and `(520,280,48,32)`. These use the dungeon obstacles' established 32px rise, with clipped faceted rock and moss artwork. Both sit outside the 96px entrance clearance. The controller jumps raised obstacles while retaining its deliberate drop from the shelf end. Other geometry and every hazard remain unchanged.
+
+### Snake tree — 9 October 2026
+
+The tree now has a continuous, densely layered pixel canopy, a curved widening trunk, outward roots and forked upper branches. It renders in front of the river so its roots remain visible. These forms remain scenery, not new collision platforms.
+
+The snake's anchor is local `(648,740)` inside the canopy. Its definition is now 32px wide with a maximum hanging length of 172px; at full extension its head reaches Y=912. It peeks out during the existing 400ms warning, drops over 180ms, holds, and retracts over the final 220ms of the existing 1.1-second active phase. The 4.4-second cycle is unchanged. During recovery only eyes remain in the canopy. The head and each small curved body segment supply both their drawn bounds and collision rectangles; the tongue is decoration. Inactive/warning phases do not damage the runner. Reduced motion retains these gameplay-critical phases.
+
+The autonomous snake waiting zone now spans from perception range to 48px before its anchor. This prevents the old narrow zone being skipped at river speed between reactions. Marty also waits for enough of a flame's off phase to clear his entire body, instead of relying on a jump with marginal descent clearance. Neither change gives immunity or changes character physics.

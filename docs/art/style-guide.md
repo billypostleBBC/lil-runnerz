@@ -65,7 +65,7 @@ The title screen reuses the Ember Vault scenery and warm cream/amber pixel lette
 
 Selection uses bevelled stone/metal panels, cream pixel labels, yellow focus and stepped lighting. The heading and actions occupy fixed rows; the centre scrolls independently on small/short screens. Description space is reserved equally for every runner. The preview is 192×208 for the detailed characters on desktop, with original-source smoothing, and adapts on small screens. Marty remains pixel-rendered. Visible controls are in How to play, not the selection screen. Arrows or WASD navigate menus; Enter chooses; Escape goes back. Manual power uses physical Left Shift.
 
-The original angular Z is an inline SVG (not a copied logo). On each page load, one available runner is chosen randomly for the title, independently of the selected playable runner. Existing run frames are cropped to measured alpha bounds and drawn at display resolution; their feet share a fixed point on the Z’s lower stroke. Reduced motion holds a single frame and disables preview bobbing.
+The original angular Z is an inline SVG (not a copied logo). On each main-menu visit, an actual course room and one available runner are chosen randomly for the title, independently of the selected playable runner. The paused game renderer supplies the room backdrop; both choices remain stable during that visit, including reduced-motion updates. Existing run frames are cropped to measured alpha bounds and drawn at display resolution; their feet share a fixed point on the Z’s lower stroke. Reduced motion holds a single frame and disables preview bobbing.
 
 Five-cell capability bars use fixed absolute bands, not roster ranking or upgrades. Exact values remain visible alongside the bars. For speed, jump and duration, bands 1–4 have inclusive upper limits; higher values fill more cells. Recharge reverses the direction: shorter cooldowns fill more cells. These are separate capability scales, not a claim that different powers are equally strong.
 
@@ -85,3 +85,13 @@ Water uses the same detailed 16-bit-inspired treatment as the scenery: stepped p
 ## Room-specific solid terrain — 8 October 2026
 
 Do not reuse dungeon masonry for every theme. Ember Vault keeps bevelled worked stone and warm cream edges. Hollow Grotto uses uneven teal rock strata, fractures and restrained mineral flecks. Jungle Run uses mottled brown mud, exposed roots and a moss/vegetation rim. Keep each walkable top legible and all material texture clipped to actual solid geometry. Cliff artwork must stop at the basin surface so it cannot cover the continuous ground-to-wall junction.
+
+## Snack collectibles — 9 October 2026
+
+Snack sprites use original code-drawn integer rectangles in `src/game/snack-art.ts`: compact silhouettes, dark edges, cream highlights and stepped material colours. They render at world scale without smoothing. Bonus jars have a cream/amber outline and sparkle to distinguish them from ordinary snacks; the first variety has glass edges, a metal clasp and red chilli chutney. Pickups produce a short points label, stationary under reduced motion. Foreground snack positions are authored independently of scenery; they never add collision surfaces or alter hazards.
+
+Bill-e Bot's rocket boots have two short cream/amber/red exhaust plumes. These are activation feedback only; the power applies one upward impulse, not continuous thrust. The capability panel shows nominal boost rise (72px under current gravity), using the existing jump-height rating bands, rather than a flight duration.
+
+The Jungle Run entrance boulders are tagged solid geometry with flat, readable collision tops, dark silhouettes, stepped rock facets and moss highlights. They reuse the dungeon obstacles' 32px rise rather than the non-solid rounded bank dressing. All in-world jungle area lettering and exit-marker strips have been removed; global HUD/accessibility labels and meaningful hazard warnings remain.
+
+The snake tree uses a filled, overlapping canopy rather than isolated leaf patches. A curved, flared trunk and forked branches support it; the tree draws in front of the river so spreading roots remain visible. The snake emerges from its canopy anchor, with the same segmented shape used for drawing and contact. Its amber warning and drop/retraction remain visible under reduced motion because they communicate active danger.

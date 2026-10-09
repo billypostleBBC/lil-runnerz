@@ -36,3 +36,7 @@ The user explicitly authorised implementing and carrying this visual style forwa
 ## Title Z
 
 `ui/title-z.svg` is the original SVG exported from Billy’s Figma design, file `OAMVNaYXvwwW0chXYtUVWv`, node `8:28` within `8:31`, on 9 October 2026. The lettering uses the existing Press Start 2P font with the Figma colours and shadows. The reference character is not included in the asset; the title uses a randomly selected available character’s right-facing run cycle.
+
+## Snacks — 9 October 2026
+
+Original snack sprites and the clasp-top chilli chutney jar are drawn with integer canvas rectangles in `src/game/snack-art.ts`. They use no external artwork, logos, fonts or image-generation service. The Kilner-style glass jar is a generic clasp-top silhouette; no manufacturer wordmark is reproduced.

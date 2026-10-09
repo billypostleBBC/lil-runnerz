@@ -71,3 +71,23 @@ describe('directional room connections', () => {
     expect(wall.y+wall.h+28).toBeGreaterThan(landing.y);
   });
 });
+
+it('jumps the entrance boulders but keeps the deliberate drop at the shelf edge', () => {
+  const actor={x:262,feet:312,halfWidth:9,grounded:true};
+  expect(jungleActions(actor,0,0,jungleRoom.hazards,140,jungleRoom.solids).jump).toBe(true);
+  expect(jungleActions({...actor,x:675},0,0,jungleRoom.hazards,140,jungleRoom.solids).jump).toBe(false);
+  expect(jungleRoom.solids.filter(s=>s.appearance==='boulder')).toHaveLength(2);
+});
+
+import { snakeShape, creatureRects } from '../src/game/jungle';
+it('extends the snake down from its canopy anchor and retracts upwards', () => {
+  const snake=jungleRoom.hazards.find(h=>h.kind==='snake')!;
+  const resting=snakeShape(snake,2000), warning=snakeShape(snake,4300), active=snakeShape(snake,500);
+  expect(resting.head.y+resting.head.h).toBe(snake.y);
+  expect(warning.head.y).toBeGreaterThan(resting.head.y);
+  expect(active.head.y+active.head.h).toBe(snake.y+snake.h);
+  expect(active.head.y+active.head.h).toBeGreaterThan(900);
+  expect(active.body[0].y).toBe(snake.y);
+  expect(creatureRects(snake,500)).toEqual([...active.body,active.head]);
+  expect(snakeShape(snake,1050).head.y).toBeLessThan(active.head.y);
+});

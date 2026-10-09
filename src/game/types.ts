@@ -7,6 +7,9 @@ export interface Rect {
   w: number;
   h: number;
 }
+export interface Solid extends Rect {
+  appearance?: "boulder";
+}
 export interface Hazard extends Rect {
   kind: "flame" | "spikes" | "spider" | "snake";
   period?: number;
@@ -30,18 +33,19 @@ export interface Room {
   entrance: Port;
   exit: Port;
   water?: Water[];
-  solids: Rect[];
+  solids: Solid[];
   hazards: Hazard[];
 }
 export interface Course {
   width: number;
   height: number;
   rooms: (Room & { offset: number; offsetY: number })[];
-  solids: Rect[];
+  solids: Solid[];
   hazards: Hazard[];
 }
 export interface Power {
-  kind: "shield" | "glide";
+  kind: "shield" | "glide" | "rocket";
+  boostSpeed?: number;
   durationMs: number;
   cooldownMs: number;
 }
@@ -90,8 +94,13 @@ export interface Run {
   shieldAt: number;
 }
 export interface Snapshot {
+  score: number;
+  snacks: number;
+  bonuses: number;
+  pickup: string;
   characterId: string;
   powerActive: boolean;
+  powerNeedsLanding: boolean;
   status: Status;
   mode: Mode;
   elapsed: number;

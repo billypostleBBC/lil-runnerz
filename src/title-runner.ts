@@ -5,6 +5,7 @@ import type { CharacterDefinition } from "./game/types";
 export class TitleRunner {
   readonly canvas = document.createElement("canvas");
   private image?: HTMLImageElement;
+  private loadVersion = 0;
   private frames: { x: number; y: number; w: number; h: number }[] = [];
   private animation = 0;
   private pixelArt = false;
@@ -14,6 +15,7 @@ export class TitleRunner {
     this.canvas.setAttribute("aria-hidden", "true");
   }
   async load(definition: CharacterDefinition) {
+    const version = ++this.loadVersion;
     const image = new Image();
     image.src = `${import.meta.env.BASE_URL}${definition.character.asset}`;
     try {
@@ -21,6 +23,7 @@ export class TitleRunner {
     } catch {
       return;
     }
+    if (version !== this.loadVersion) return;
     const { frameWidth: w, frameHeight: h } = definition;
     const probe = document.createElement("canvas");
     probe.width = w;

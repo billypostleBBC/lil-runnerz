@@ -64,11 +64,12 @@ export function validateCharacter(c: Character): void {
   );
   assert(
     c.power &&
-      ["shield", "glide"].includes(c.power.kind) &&
+      ["shield", "glide", "rocket"].includes(c.power.kind) &&
       finite(c.power.durationMs, 100, 3000) &&
       finite(c.power.cooldownMs, c.power.durationMs, 30000),
     "Power kind, duration or cooldown is invalid.",
   );
+  if (c.power.kind === "rocket") assert(finite(c.power.boostSpeed, 100, 500), "Rocket boost speed must be 100–500 px/s.");
 }
 export function validateCharacters(
   definitions: readonly CharacterDefinition[],
@@ -160,6 +161,9 @@ export function assembleCourse(rooms: Room[]): Course {
           rect.y + rect.h <= room.height,
         `Room ${room.id}: geometry must be finite and inside the room.`,
       );
+    }
+    for (const solid of room.solids) {
+      assert(solid.appearance === undefined || solid.appearance === "boulder", `Room ${room.id}: invalid solid appearance.`);
     }
     for (const h of room.hazards) {
       assert(
@@ -281,6 +285,12 @@ export const powerActive = (at: number, now: number, p: Power) =>
   now >= at && now - at < p.durationMs;
 export const shieldActive = (at: number, now: number, p: Power) =>
   p.kind === "shield" && powerActive(at, now, p);
+// One impulse per airtime as well as a cooldown: holding or repeatedly pressing
+// power cannot chain boosts into flight. Keep a stronger existing upward jump.
+export const activateRocket = (at: number, now: number, p: Power, usedInAir: boolean) =>
+  p.kind === "rocket" && !usedInAir && cooldownLeft(at, now, p) === 0 ? now : at;
+export const rocketVelocity = (vy: number, p: Power) =>
+  p.kind === "rocket" ? Math.min(vy, -p.boostSpeed!) : vy;
 export const activateGlide = (at: number, now: number, p: Power, grounded: boolean) =>
   grounded ? at : activateShield(at, now, p);
 export const glideVelocity = (vy: number, at: number, now: number, p: Power, grounded: boolean) =>
@@ -370,5 +380,30 @@ export class Controller {
       this.nextDecision = now + this.profile.reactionMs;
     }
     return this.action;
+  }
+}
+
+// A non-protective hoverboard should cross a flame during its off phase rather
+// than rely on a jump with only a few pixels of landing clearance.
+export class FlameCrossingController {
+  private crossing?: Hazard;
+  decide(actor: Actor, hazards: Hazard[], now: number, speed: number): Actions | undefined {
+    if (this.crossing) {
+      if (actor.x-actor.halfWidth > this.crossing.x+this.crossing.w+8) this.crossing = undefined;
+      else return {move:1,jump:false,power:false};
+    }
+    if (!actor.grounded) return;
+    const flame = hazards.find(h => h.kind === 'flame' && h.x+ h.w >= actor.x-actor.halfWidth &&
+      h.x-actor.x < 120 && Math.abs(h.y+h.h-actor.feet)<4);
+    if (!flame) return;
+    if (flame.x-actor.x > 55) return {move:1,jump:false,power:false};
+    const phase = (now+(flame.phase ?? 0))%flame.period!;
+    // Include acceleration from rest, body clearance and a small reaction margin.
+    const travel = (flame.x+flame.w+actor.halfWidth+12-actor.x)/speed*1000+150;
+    if (phase >= flame.on! && phase+travel < flame.period!) {
+      this.crossing = flame;
+      return {move:1,jump:false,power:false};
+    }
+    return {move:0,jump:false,power:false};
   }
 }

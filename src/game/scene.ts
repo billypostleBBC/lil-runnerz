@@ -1,16 +1,22 @@
+import { BonusController, collectSnacks, createCollectibles } from "./collectibles";
+import { paintCollectibles } from "./snack-art";
+import { snackNames } from "../content/collectibles";
 import { CAMERA_FLOOR_LINE, GAME_VIEW, followView } from "./camera";
-import { creatureRect, crossedExit, jungleActions, jungleStage, overlaps, waterVelocity } from "./jungle";
+import { creatureRects, crossedExit, jungleActions, jungleStage, overlaps, waterVelocity } from "./jungle";
 import Phaser from "phaser";
 import { characters, defaultCharacterId, getCharacter } from "../content/character";
 import { rooms } from "../content/rooms";
 import {
   activateShield,
   activateGlide,
+  activateRocket,
+  rocketVelocity,
   glideVelocity,
   powerActive,
   advanceRun,
   assembleCourse,
   Controller,
+  FlameCrossingController,
   cooldownLeft,
   createRun,
   hazardActive,
@@ -27,9 +33,15 @@ export class CourseScene extends Phaser.Scene {
   private character: Character = getCharacter(defaultCharacterId).character;
   private starting = false;
   private gliding = false;
+  private rocketUsed = false;
   private glideLanded = false;
   private hasGrounded = false;
   readonly course = assembleCourse(rooms);
+  private collection = createCollectibles(this.course);
+  private snacksArt!: Phaser.Textures.CanvasTexture;
+  private pickupFeedback: {x:number;y:number;points:number;at:number}[] = [];
+  private pickup = "";
+  private bonusControllers = new Map<string, BonusController>();
   private player!: Phaser.Physics.Arcade.Sprite;
   private characterArtwork!: CharacterArtwork;
   private backdrop!: Phaser.Textures.CanvasTexture;
@@ -38,6 +50,7 @@ export class CourseScene extends Phaser.Scene {
   private shield!: Phaser.GameObjects.Graphics;
   private manual!: ManualInput;
   private controller = new Controller(getCharacter(this.character.id).controllerProfile);
+  private flameCrossing = new FlameCrossingController();
   private run = createRun("auto");
   private reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   private motionQuery = matchMedia("(prefers-reduced-motion: reduce)");
@@ -98,6 +111,8 @@ export class CourseScene extends Phaser.Scene {
       this.course.height,
     )!;
     this.add.image(0, 0, "hazards").setOrigin(0).setDepth(2);
+    this.snacksArt = this.textures.createCanvas("snacks", this.course.width, this.course.height)!;
+    this.add.image(0, 0, "snacks").setOrigin(0).setDepth(3);
     this.physics.world.setBounds(
       0,
       -100,
@@ -146,7 +161,7 @@ export class CourseScene extends Phaser.Scene {
           this.end(
             "dead",
             hazard.kind === "flame"
-              ? this.character.power.kind === "shield" ? "Caught by the flames. Time your shield or wait for the embers." : "Caught by the flames. Jump over them or wait for the embers; the board cannot protect you."
+              ? this.character.power.kind === "shield" ? "Caught by the flames. Time your shield or wait for the embers." : "Caught by the flames. Jump over them or wait for the embers; your power gives no protection."
               : this.course.rooms.some(room => room.theme === "jungle" && hazard.x >= room.offset && hazard.x < room.offset + room.width)
                 ? "You overshot the landing. Steer left as you drop from the first ledge."
                 : "Those spikes bite. Jump over them or take the upper route.",
@@ -206,6 +221,21 @@ export class CourseScene extends Phaser.Scene {
     this.character = getCharacter(id).character;
     this.publish();
   }
+  previewRoom(id: string) {
+    if (!this.ready || this.run.status !== "ready") return;
+    const room = this.course.rooms.find((candidate) => candidate.id === id);
+    if (!room) return;
+    this.physics.pause();
+    this.manual.clear();
+    this.player.setVisible(false);
+    // Frame the actual entrance route, with platforms beneath the menu controls.
+    // start() restores the player and normal camera before either play mode.
+    this.cameras.main.setScroll(
+      room.offset + Math.max(0, (room.width - GAME_VIEW.width) / 2),
+      room.offsetY + Math.max(0, Math.min(room.height - GAME_VIEW.height,
+        room.entrance.y - CAMERA_FLOOR_LINE)),
+    );
+  }
   private configureCharacter() {
     const marty = this.character.id === "marty";
     this.player.setTexture(`pet:${this.character.id}`, 0).setScale(marty ? 0.5 : 40 / 192).setFlipX(false);
@@ -231,7 +261,13 @@ export class CourseScene extends Phaser.Scene {
     this.martyWasAirborne = false;
     this.martyLandedAt = -Infinity;
     this.run = createRun(mode);
+    this.collection = createCollectibles(this.course);
+    this.pickupFeedback = [];
+    this.pickup = "";
+    this.bonusControllers.clear();
+    this.flameCrossing = new FlameCrossingController();
     this.gliding = false;
+    this.rocketUsed = false;
     this.glideLanded = false;
     this.hasGrounded = false;
     this.run.status = "running";
@@ -312,6 +348,9 @@ export class CourseScene extends Phaser.Scene {
     this.manual.clear();
     this.physics.pause();
     this.run = createRun(this.run.mode);
+    this.collection = createCollectibles(this.course);
+    this.pickupFeedback = [];
+    this.pickup = "";
     this.bestRouteProgress = 0;
     this.walkVelocity = 0;
     this.gliding = false;
@@ -344,6 +383,7 @@ export class CourseScene extends Phaser.Scene {
       if (grounded) {
         this.groundedAt = this.run.elapsed;
         this.hasGrounded = true;
+        if (body.velocity.y >= 0) this.rocketUsed = false;
       }
       const actor = {
         x: this.player.x,
@@ -358,10 +398,10 @@ export class CourseScene extends Phaser.Scene {
       if (inJungle) this.routeStage = jungleStage(this.routeStage, localActor.feet);
       if (inJungle && this.run.mode === "auto" && this.run.elapsed >= this.nextJungleDecision) {
         const profile = getCharacter(this.character.id).controllerProfile;
-        this.jungleDecision = jungleActions(localActor, this.routeStage, this.run.elapsed, room.hazards, profile.perceptionDistance);
+        this.jungleDecision = jungleActions(localActor, this.routeStage, this.run.elapsed, room.hazards, profile.perceptionDistance, room.solids, profile.jumpLead);
         this.nextJungleDecision = this.run.elapsed + profile.reactionMs;
       }
-      const actions: Actions =
+      let actions: Actions =
         this.run.mode === "manual"
           ? this.manual.read()
           : inJungle ? { ...this.jungleDecision }
@@ -371,16 +411,36 @@ export class CourseScene extends Phaser.Scene {
               this.course.solids,
               this.course.hazards,
             ) };
+      let seekingBonus = false;
+      if (this.run.mode === "auto") {
+        let seeker = this.bonusControllers.get(room.id);
+        if (!seeker) { seeker = new BonusController(); this.bonusControllers.set(room.id, seeker); }
+        const previousProgress = seeker.progress;
+        const bonusAction = seeker.decide(room.id, localActor, this.character, this.run.elapsed,
+          this.collection.items.some(i => i.kind === "bonus" && !i.collected && i.id.startsWith(`${room.id}:`)));
+        if (bonusAction) { actions = bonusAction; seekingBonus = true; }
+        if (seeker.progress > previousProgress) this.lastProgressTime = this.run.elapsed;
+      }
       if (this.run.mode === "auto" && this.character.power.kind === "glide") {
         // Save the board for gaps, rather than spending it on every small step.
         const landingBelow = this.course.solids.some(s =>
           this.player.x >= s.x && this.player.x <= s.x + s.w && s.y >= body.bottom);
         actions.power = !grounded && body.velocity.y >= -40 && !landingBelow;
-        // Marty jumps flames because his board offers no immunity.
-        if (grounded && this.course.hazards.some(h =>
-          h.kind === "flame" && hazardActive(h, this.run.elapsed) &&
-          h.x > this.player.x && h.x - this.player.x < 85 && h.y < body.bottom))
-          actions.jump = true;
+        const crossing = this.flameCrossing.decide(actor, this.course.hazards, this.run.elapsed, this.character.speed);
+        if (crossing && !seekingBonus) actions = crossing;
+      }
+      if (this.run.mode === "auto" && this.character.power.kind === "rocket") {
+        const danger = this.course.hazards.some(h => h.kind === "flame" &&
+          hazardActive(h, this.run.elapsed) && h.x+h.w >= actor.x-actor.halfWidth &&
+          h.x-actor.x < 85 && h.y < actor.feet+this.character.jumpSpeed**2/(2*this.character.gravity) &&
+          h.y+h.h > actor.feet-body.height);
+        if (grounded && danger) actions.jump = true;
+        const landingBelow = this.course.solids.some(s => actor.x >= s.x && actor.x <= s.x+s.w && s.y >= actor.feet);
+        const boostRise = this.character.power.boostSpeed!**2/(2*this.character.gravity);
+        const ceiling = this.course.solids.some(s => overlaps(
+          {x:body.x,y:body.y-boostRise,w:body.width,h:boostRise}, s));
+        actions.power = !grounded && body.velocity.y >= -80 && body.velocity.y < 180 && !ceiling &&
+          (seekingBonus || danger || !landingBelow);
       }
       const target = actions.move * this.character.speed;
       const rate = ((actions.move ? 1500 : 2100) * dt) / 1000;
@@ -400,8 +460,19 @@ export class CourseScene extends Phaser.Scene {
       if (actions.power) {
         const at = this.character.power.kind === "glide"
           ? activateGlide(this.run.shieldAt, this.run.elapsed, this.character.power, grounded || !this.hasGrounded)
-          : activateShield(this.run.shieldAt, this.run.elapsed, this.character.power);
-        if (at !== this.run.shieldAt) this.glideLanded = false;
+          : this.character.power.kind === "rocket"
+            ? activateRocket(this.run.shieldAt, this.run.elapsed, this.character.power, this.rocketUsed)
+            : activateShield(this.run.shieldAt, this.run.elapsed, this.character.power);
+        if (at !== this.run.shieldAt && this.character.power.kind === "rocket") {
+          this.player.setVelocityY(rocketVelocity(body.velocity.y, this.character.power));
+          this.rocketUsed = true;
+          this.groundedAt = -1000;
+          this.jumpBufferedUntil = 0;
+        }
+        if (at !== this.run.shieldAt) {
+          this.glideLanded = false;
+          this.lastPublish = -Infinity;
+        }
         this.run.shieldAt = at;
       }
       this.gliding = this.character.power.kind === "glide" && !grounded &&
@@ -421,13 +492,23 @@ export class CourseScene extends Phaser.Scene {
               : body.blocked.right || Math.abs(body.velocity.x) < 8
                 ? "Looking for a route"
                 : "Watching the path ahead";
+      if (seekingBonus) this.decision = "Taking the bonus route";
+      if (this.character.power.kind === "rocket" && powerActive(this.run.shieldAt, this.run.elapsed, this.character.power)) this.decision = "Rocket-boot boost";
       const bodyRect = { x: body.x, y: body.y, w: body.width, h: body.height };
+      const picked = collectSnacks(this.collection, bodyRect, this.run.status);
+      if (picked.length) this.lastPublish = -Infinity;
+      for (const item of picked) {
+        const points = item.kind === "bonus" ? 100 : 10;
+        this.pickupFeedback.push({x:item.x,y:item.y,points,at:this.run.elapsed});
+        this.pickup = `${snackNames[item.variety]} +${points}`;
+      }
+      this.pickupFeedback = this.pickupFeedback.filter(f => this.run.elapsed-f.at<850);
       for (const h of this.course.hazards) {
         if ((h.kind === "spider" || h.kind === "snake") && hazardActive(h, this.run.elapsed) &&
-          overlaps(bodyRect, creatureRect(h, this.run.elapsed)) &&
+          creatureRects(h, this.run.elapsed).some(rect => overlaps(bodyRect, rect)) &&
           !shieldActive(this.run.shieldAt, this.run.elapsed, this.character.power))
           this.end("dead", h.kind === "spider" ? "The spider caught you. Wait for it to climb, then pass underneath." :
-            "The snake struck. Steer against the current, then pass during its recovery.");
+            "The snake dropped from the canopy. Steer against the current, then pass while it retracts.");
       }
       if (inJungle && this.run.status === "running") {
         for (const water of room.water ?? []) {
@@ -440,14 +521,14 @@ export class CourseScene extends Phaser.Scene {
             water.kind === "whirlpool" ? "Push right to escape the whirlpool" : "Riding the current — jump at the lip for the bonus climb";
         }
         if (this.run.mode === "auto" && actions.move === 0) this.decision = "Waiting for a safe crossing";
-        if (localActor.x > 924 && localActor.feet < 530) this.decision = "Bonus area reached — collectibles coming later";
+        if (localActor.x > 924 && localActor.feet < 530) this.decision = "Chutney summit — head back down to the exit";
       }
       const final = this.course.rooms.at(-1)!;
       const exit = { ...final.exit, x: final.offset + (final.exit.x ?? final.width - 96), y: final.offsetY + final.exit.y };
       if (crossedExit(exit, this.previousPosition, { x: this.player.x, feet: body.bottom }))
         this.end("won", "Three rooms, one expedition. You dropped out of Jungle Run!");
       else if (body.bottom > room.offsetY + room.height + 40)
-        this.end("dead", "A long way down. Aim for a landing or the marked exit on your next attempt.");
+        this.end("dead", "A long way down. Aim for a landing or the exit on your next attempt.");
       this.previousPosition = { x: this.player.x, feet: body.bottom };
       const routeProgress = inJungle ? room.offset + this.routeStage * 1200 +
         (this.routeStage === 1 ? room.width - localActor.x : localActor.x) : this.player.x;
@@ -486,6 +567,8 @@ export class CourseScene extends Phaser.Scene {
       (h) => hazardActive(h, this.run.elapsed),
     );
     this.hazardsArt.refresh();
+    paintCollectibles(this.snacksArt.context, this.collection, this.run.elapsed, this.reduced, this.pickupFeedback);
+    this.snacksArt.refresh();
     this.shield.clear();
     if (shieldActive(this.run.shieldAt, this.run.elapsed, this.character.power)) {
       this.shield.lineStyle(2, 0xabe7c2, 1);
@@ -504,6 +587,13 @@ export class CourseScene extends Phaser.Scene {
         50,
         10,
       );
+    }
+    if (this.character.power.kind === "rocket" && powerActive(this.run.shieldAt, this.run.elapsed, this.character.power)) {
+      const x = Math.round(this.player.x), y = Math.round(body.bottom);
+      // Two crisp exhaust plumes: the impulse is instantaneous; this is feedback only.
+      this.shield.fillStyle(0xe26337); this.shield.fillRect(x-9,y,5,13); this.shield.fillRect(x+4,y,5,13);
+      this.shield.fillStyle(0xffc65b); this.shield.fillRect(x-8,y,3,9); this.shield.fillRect(x+5,y,3,9);
+      this.shield.fillStyle(0xfff0c2); this.shield.fillRect(x-7,y,2,5); this.shield.fillRect(x+5,y,2,5);
     }
     if (_time - this.lastPublish > 100) {
       this.publish();
@@ -565,8 +655,13 @@ export class CourseScene extends Phaser.Scene {
   snapshot(): Snapshot {
     const body = this.player?.body as Phaser.Physics.Arcade.Body | undefined;
     return {
+      powerNeedsLanding: this.character.power.kind === "rocket" && this.rocketUsed,
+      score: this.collection.score,
+      snacks: this.collection.snacks,
+      bonuses: this.collection.bonuses,
+      pickup: this.pickup,
       characterId: this.character.id,
-      powerActive: this.gliding || shieldActive(this.run.shieldAt, this.run.elapsed, this.character.power),
+      powerActive: this.gliding || (this.character.power.kind === "rocket" && powerActive(this.run.shieldAt, this.run.elapsed, this.character.power)) || shieldActive(this.run.shieldAt, this.run.elapsed, this.character.power),
       status: this.run.status,
       mode: this.run.mode,
       elapsed: Math.round(this.run.elapsed),

@@ -153,9 +153,8 @@ canvas:focus-visible {
   overflow-y: auto;
 }
 .screen.splash {
-  background:
-    linear-gradient(#06101c55, #06101c99),
-    url("/assets/scenery/ember-vault.png") center / cover;
+  /* The paused gameplay renderer supplies the selected room beneath this veil. */
+  background: linear-gradient(#06101c55, #06101c99);
   image-rendering: pixelated;
 }
 .screen-card {
@@ -728,4 +727,9 @@ canvas.title-runner {
     animation: none !important;
     transition: none !important;
   }
+}
+
+.score-label {
+  white-space: nowrap;
+  margin-right: auto;
 }
