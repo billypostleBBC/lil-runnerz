@@ -32,3 +32,7 @@ The user explicitly authorised implementing and carrying this visual style forwa
 ## Jungle Run scenery — 6 October 2026
 
 `scenery/jungle-run.png` is original background artwork generated with the built-in image-generation tool using the checked-in Ember Vault and Hollow Grotto as style references. [Exact prompt](../../docs/art/jungle-generation.md). All foreground platforms, water, spider, snake, foliage and labels are code-drawn separately. Billy’s source sketch is preserved in `docs/rooms/sources/jungle-run.HEIC` as authoring evidence, not a runtime asset.
+
+## Title Z
+
+`ui/title-z.svg` is the original SVG exported from Billy’s Figma design, file `OAMVNaYXvwwW0chXYtUVWv`, node `8:28` within `8:31`, on 9 October 2026. The lettering uses the existing Press Start 2P font with the Figma colours and shadows. The reference character is not included in the asset; the title uses a randomly selected available character’s right-facing run cycle.

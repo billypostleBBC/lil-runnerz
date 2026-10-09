@@ -621,50 +621,39 @@ legend,
   }
 }
 
-/* Title letters remain real text; Bill-e Bot uses its existing running sprite row. */
+/* Figma 8:31: 1581 × 274 composition, expressed relative to its 120px type.
+   The original Z export includes its 30px shadow. */
 .title-word {
-  display: inline-flex;
-  align-items: baseline;
+  display: inline-block;
   position: relative;
+  width: 13.175em;
+  height: 2.283333em;
+  vertical-align: top;
+  text-align: left;
+}
+.title-lettering {
+  position: absolute;
+  left: 0;
+  top: 0.325em;
+  color: #ff9900;
+  line-height: normal;
+  white-space: nowrap;
+  text-shadow: 0.25em 0.25em #180600, 0.166667em 0.166667em #551500,
+    0.083333em 0.083333em #8d2300;
 }
 .title-z {
-  position: relative;
-  display: inline-block;
-  width: 1.55em;
-  height: 1.7em;
-  margin-left: -0.08em;
-  margin-right: 0.1em;
-  vertical-align: baseline;
-}
-.title-z svg {
   position: absolute;
-  width: 100%;
-  height: 100%;
-  left: 0;
-  bottom: -0.43em;
-  overflow: visible;
-}
-.z-shadow {
-  fill: #7c481f;
-  stroke: #241c19;
-  stroke-width: 4px;
-  stroke-linejoin: bevel;
-}
-.z-face {
-  fill: #efae42;
-  stroke: #ffdd88;
-  stroke-width: 2px;
-  stroke-linejoin: bevel;
-}
-.z-highlight {
-  fill: #fff0bc;
+  left: 9.625em;
+  top: 0;
+  width: 3.045833em;
+  height: 2.079167em;
 }
 .title-runner-anchor {
   position: absolute;
-  left: 0.83em;
-  bottom: 0.23em;
-  width: 0.9em;
-  height: 1.06em;
+  left: 11.7em;
+  top: 0;
+  width: 1.475em;
+  height: 2.283333em;
 }
 canvas.title-runner {
   width: 100%;
@@ -672,8 +661,11 @@ canvas.title-runner {
   image-rendering: auto;
 }
 .splash #screen-title {
-  font-size: clamp(22px, 5.8cqw, 64px);
-  padding-top: 4cqw;
+  font-size: 6cqw;
+  letter-spacing: 0;
+  line-height: 1;
+  text-shadow: none;
+  padding-top: 0;
 }
 @container (max-width: 650px) {
   .selection-layout {

@@ -1,7 +1,7 @@
 import type { CharacterDefinition } from "./game/types";
 
 // Decorative only. Crop each existing run frame to its alpha bounds so every
-// runner plants its feet on the same point of the Z despite different sheet padding.
+// runner keeps the reference scale beside the Z despite different sheet padding.
 export class TitleRunner {
   readonly canvas = document.createElement("canvas");
   private image?: HTMLImageElement;
@@ -77,7 +77,7 @@ export class TitleRunner {
       c.imageSmoothingQuality = "high";
       const frame =
         this.frames[
-          this.reduced.matches ? 0 : Math.floor(time / 100) % this.frames.length
+          this.reduced.matches ? 0 : Math.floor(time / 95) % this.frames.length
         ];
       const scale = Math.min(
         width / Math.max(...this.frames.map((f) => f.w)),
